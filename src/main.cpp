@@ -1,77 +1,72 @@
-﻿/*******************************************************************************************
- *
- *   raylib [core] example - basic window
- *
- *   Example complexity rating: [★☆☆☆] 1/4
- *
- *   Welcome to raylib!
- *
- *   To test examples, just press F6 and execute 'raylib_compile_execute' script
- *   Note that compiled executable is placed in the same folder as .c file
- *
- *   To test the examples on Web, press F6 and execute
- *'raylib_compile_execute_web' script Web version of the program is generated in
- *the same folder as .c file
- *
- *   You can find all basic examples on C:\raylib\raylib\examples folder or
- *   raylib official webpage: www.raylib.com
- *
- *   Enjoy using raylib. :)
- *
- *   Example originally created with raylib 1.0, last time updated with
- *raylib 1.0
- *
- *   Example licensed under an unmodified zlib/libpng license, which is an
- *OSI-certified, BSD-like license that allows static linking with closed source
- *software
- *
- *   Copyright (c) 2013-2025 Ramon Santamaria (@raysan5)
- *
- ********************************************************************************************/
+﻿#include <raylib.h>
+#include <raymath.h>
 
-#include "raylib.h"
+// ==============
+// === DRIVER ===
+// ==============
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
-int
-main(void)
+extern "C"
 {
-  // Initialization
-  //--------------------------------------------------------------------------------------
-  const int screenWidth = 800;
-  const int screenHeight = 450;
+  __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+  __declspec(dllexport) unsigned long AmdPowerXpressRequestHighPerformance =
+    0x00000001;
+}
 
-  InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+// =============
+// === UTILS ===
+// =============
 
-  SetTargetFPS(60); // Set our game to run at 60 frames-per-second
-  //--------------------------------------------------------------------------------------
+static void
+draw_fps()
+{
+  DrawText(TextFormat("%d", GetFPS()), 8, 4, 30, GREEN);
+}
 
-  // Main game loop
-  while (!WindowShouldClose()) // Detect window close button or ESC key
-  {
-    // Update
-    //----------------------------------------------------------------------------------
-    // TODO: Update your variables here
-    //----------------------------------------------------------------------------------
+// ==================
+// === ENTRYPOINT ===
+// ==================
 
-    // Draw
-    //----------------------------------------------------------------------------------
+int
+main()
+{
+  SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_UNDECORATED);
+  InitWindow(0, 0, "machina");
+  SetWindowSize(GetScreenWidth() + 1, GetScreenHeight() + 1);
+  InitAudioDevice();
+  SetExitKey(KEY_NULL);
+
+  bool show_fps = false;
+
+  Model model = LoadModel("../../../assets/models/suzanne.glb");
+  Vector3 position = Vector3Zeros;
+  Camera camera = {
+    .position = Vector3Scale(Vector3Ones, 5.0f),
+    .target = position,
+    .up = Vector3UnitY,
+    .fovy = 60.0f,
+    .projection = CAMERA_PERSPECTIVE,
+  };
+
+  while (!WindowShouldClose()) {
+    show_fps ^= IsKeyPressed(KEY_F1);
+
+    UpdateCamera(&camera, CAMERA_ORBITAL);
+
     BeginDrawing();
-
     ClearBackground(RAYWHITE);
 
-    DrawText(
-      "Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+    BeginMode3D(camera);
+    DrawModel(model, position, 1.0f, WHITE);
+    DrawGrid(10, 1.0f);
+    EndMode3D();
+
+    if (show_fps) {
+      draw_fps();
+    }
 
     EndDrawing();
-    //----------------------------------------------------------------------------------
   }
 
-  // De-Initialization
-  //--------------------------------------------------------------------------------------
-  CloseWindow(); // Close window and OpenGL context
-  //--------------------------------------------------------------------------------------
-
-  return 0;
+  CloseAudioDevice();
+  CloseWindow();
 }
