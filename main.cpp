@@ -1,10 +1,8 @@
-﻿#include <iostream>
-
-using namespace std;
+﻿#include "fmt/base.h"
 
 int
 main()
 {
-  cout << "Hello CMake." << endl;
+  fmt::println("Hello, World!");
   return 0;
 }
