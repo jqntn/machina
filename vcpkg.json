@@ -1,6 +1,6 @@
 {
   "dependencies": [
-    "raylib",
-    "fmt"
+    "fmt",
+    "raylib"
   ]
 }
