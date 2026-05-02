@@ -1,9 +1,6 @@
 {
   "dependencies": [
     "fmt",
-    "materialx",
-    "raylib",
-    "usd",
     "entt"
   ]
 }
