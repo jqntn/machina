@@ -1,5 +1,17 @@
 {
   "dependencies": [
+    {
+      "name": "usd",
+      "features": [
+        "materialx"
+      ]
+    },
+    {
+      "name": "materialx",
+      "features": [
+        "glsl-generator"
+      ]
+    },
     "entt"
   ]
 }

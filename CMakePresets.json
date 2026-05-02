@@ -58,5 +58,15 @@
         "CMAKE_BUILD_TYPE": "Release"
       }
     }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-release-distrib",
+      "displayName": "x64 Release Distrib",
+      "configurePreset": "x64-release",
+      "targets": [
+        "distrib"
+      ]
+    }
   ]
 }

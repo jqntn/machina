@@ -1,9 +1,16 @@
-﻿#include <raylib.h>
+#include "machina/LevelInstantiator.hpp"
+#include "machina/MaterialXShaderGenerator.hpp"
+#include "machina/Renderer.hpp"
+#include "machina/UsdLevelLoader.hpp"
+
+#include <entt/entt.hpp>
+#include <raylib.h>
 #include <raymath.h>
 
-// ==============
-// === DRIVER ===
-// ==============
+#include <filesystem>
+#include <print>
+#include <string_view>
+#include <vector>
 
 extern "C"
 {
@@ -12,67 +19,95 @@ extern "C"
     0x00000001;
 }
 
-// =============
-// === UTILS ===
-// =============
+namespace {
 
-static void
-draw_fps()
+std::filesystem::path
+sampleScenePath()
+{
+  return std::filesystem::current_path() / MACHINA_ASSETS_ROOT / "scenes" /
+         "suzannes" / "Untitled.usda";
+}
+
+void
+printDiagnostics(std::string_view label,
+                 const std::vector<machina::Diagnostic>& diagnostics)
+{
+  for (const machina::Diagnostic& diagnostic : diagnostics) {
+    std::println("{}: {}", label, diagnostic.message);
+  }
+}
+
+void
+drawFps()
 {
   DrawText(TextFormat("%d", GetFPS()), 8, 4, 30, GREEN);
 }
 
-// ==================
-// === ENTRYPOINT ===
-// ==================
+}
 
 int
 main()
 {
+  machina::UsdLevelLoader loader;
+  machina::LevelDescription level = loader.load(sampleScenePath());
+
+  if (!level.ok()) {
+    printDiagnostics("usd", level.diagnostics);
+    return 1;
+  }
+
   SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_UNDECORATED);
   InitWindow(1, 1, "machina");
 
-  int current_monitor = GetCurrentMonitor();
-  int monitor_width = GetMonitorWidth(current_monitor);
-  int monitor_height = GetMonitorHeight(current_monitor);
-  SetWindowSize(monitor_width + 1, monitor_height + 1);
+  const int currentMonitor = GetCurrentMonitor();
+  const int monitorWidth = GetMonitorWidth(currentMonitor);
+  const int monitorHeight = GetMonitorHeight(currentMonitor);
+  SetWindowSize(monitorWidth + 1, monitorHeight + 1);
   SetWindowPosition(0, 0);
-
-  InitAudioDevice();
   SetExitKey(KEY_NULL);
 
-  bool show_fps = false;
+  machina::MaterialXShaderGenerator shaderGenerator(
+    std::filesystem::current_path() / MACHINA_MATERIALX_LIBRARY_ROOT);
+  machina::Renderer renderer;
+  std::vector<machina::Diagnostic> rendererDiagnostics =
+    renderer.load(level, shaderGenerator);
+  if (!rendererDiagnostics.empty()) {
+    printDiagnostics("renderer", rendererDiagnostics);
+    CloseWindow();
+    return 1;
+  }
 
-  Model model = LoadModel("../../../assets/models/suzannes.glb");
-  Vector3 position = Vector3Zeros;
+  entt::registry registry;
+  machina::LevelInstantiator().instantiate(registry, level);
+
+  bool showFps = false;
   Camera camera = {
-    .position = Vector3Scale(Vector3Ones, 5.0f),
-    .target = position,
-    .up = Vector3UnitY,
-    .fovy = 60.0f,
+    .position = Vector3Scale(Vector3One(), 6.0F),
+    .target = Vector3Zero(),
+    .up = Vector3{ 0.0F, 1.0F, 0.0F },
+    .fovy = 60.0F,
     .projection = CAMERA_PERSPECTIVE,
   };
 
   while (!WindowShouldClose()) {
-    show_fps ^= IsKeyPressed(KEY_F1);
-
+    showFps = showFps != IsKeyPressed(KEY_F1);
     UpdateCamera(&camera, CAMERA_ORBITAL);
 
     BeginDrawing();
     ClearBackground(RAYWHITE);
 
     BeginMode3D(camera);
-    DrawModel(model, position, 1.0f, WHITE);
-    DrawGrid(10, 1.0f);
+    renderer.draw(registry);
+    DrawGrid(20, 1.0F);
     EndMode3D();
 
-    if (show_fps) {
-      draw_fps();
+    if (showFps) {
+      drawFps();
     }
 
     EndDrawing();
   }
 
-  CloseAudioDevice();
   CloseWindow();
+  return 0;
 }
