@@ -30,8 +30,14 @@ int
 main()
 {
   SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_UNDECORATED);
-  InitWindow(0, 0, "machina");
-  SetWindowSize(GetScreenWidth() + 1, GetScreenHeight() + 1);
+  InitWindow(1, 1, "machina");
+
+  int current_monitor = GetCurrentMonitor();
+  int monitor_width = GetMonitorWidth(current_monitor);
+  int monitor_height = GetMonitorHeight(current_monitor);
+  SetWindowSize(monitor_width + 1, monitor_height + 1);
+  SetWindowPosition(0, 0);
+
   InitAudioDevice();
   SetExitKey(KEY_NULL);
 
