@@ -37,7 +37,7 @@ main()
 
   bool show_fps = false;
 
-  Model model = LoadModel("../../../assets/models/suzanne.glb");
+  Model model = LoadModel("../../../assets/models/suzannes.glb");
   Vector3 position = Vector3Zeros;
   Camera camera = {
     .position = Vector3Scale(Vector3Ones, 5.0f),
