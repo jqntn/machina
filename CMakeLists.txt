@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.20)
 
 project(machina LANGUAGES CXX)
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+endif()
+
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
@@ -13,8 +17,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 find_package(EnTT CONFIG REQUIRED)
-find_package(MaterialX CONFIG REQUIRED)
-find_package(pxr CONFIG REQUIRED)
+include(cmake/NvidiaUsd.cmake)
+machina_add_nvidia_usd_sdk()
 
 set(MACHINA_ENGINE_SOURCES
     src/LevelInstantiator.cpp
@@ -22,32 +26,8 @@ set(MACHINA_ENGINE_SOURCES
     src/Renderer.cpp
     src/UsdLevelLoader.cpp)
 
-file(TO_CMAKE_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}" MACHINA_VCPKG_PREFIX)
-
 set(MACHINA_ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(MACHINA_ASSETS_RUNTIME_ROOT "assets")
-
-set(MACHINA_MATERIALX_LIBRARY_SOURCE_DIR "${MACHINA_VCPKG_PREFIX}/libraries")
-set(MACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT "materialx")
-
-set(MACHINA_VCPKG_RUNTIME_BIN_DIR "${MACHINA_VCPKG_PREFIX}/bin")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND EXISTS "${MACHINA_VCPKG_PREFIX}/debug/bin")
-    set(MACHINA_VCPKG_RUNTIME_BIN_DIR "${MACHINA_VCPKG_PREFIX}/debug/bin")
-endif()
-
-set(MACHINA_USD_PLUGIN_SOURCE_DIR "${MACHINA_VCPKG_PREFIX}/bin/usd")
-set(MACHINA_USD_PLUGIN_RUNTIME_DIR "${CMAKE_CURRENT_BINARY_DIR}/usd_plugins")
-set(MACHINA_USD_PLUGIN_INDEX "${CMAKE_CURRENT_BINARY_DIR}/usd")
-file(GLOB MACHINA_USD_RUNTIME_DLLS CONFIGURE_DEPENDS "${MACHINA_VCPKG_RUNTIME_BIN_DIR}/usd_*.dll")
-
-if(EXISTS "${MACHINA_USD_PLUGIN_SOURCE_DIR}")
-    file(REMOVE_RECURSE "${MACHINA_USD_PLUGIN_RUNTIME_DIR}")
-    file(REMOVE_RECURSE "${MACHINA_USD_PLUGIN_INDEX}")
-    file(COPY "${MACHINA_USD_PLUGIN_SOURCE_DIR}/" DESTINATION "${MACHINA_USD_PLUGIN_RUNTIME_DIR}")
-    file(
-        WRITE "${MACHINA_USD_PLUGIN_INDEX}"
-        "{\n  \"Includes\": [\n    \"usd_plugins/**/\"\n  ]\n}\n")
-endif()
 
 add_library(machina_engine STATIC ${MACHINA_ENGINE_SOURCES})
 target_compile_features(machina_engine PUBLIC cxx_std_23)
@@ -60,14 +40,7 @@ target_link_libraries(
     machina_engine
     PUBLIC raylib
            EnTT::EnTT
-           usd
-           usdGeom
-           usdShade
-           usdMtlx
-           MaterialXCore
-           MaterialXFormat
-           MaterialXGenShader
-           MaterialXGenGlsl)
+           machina_nvidia_usd)
 
 add_executable(machina src/main.cpp)
 target_link_libraries(machina PRIVATE machina_engine)
@@ -106,17 +79,6 @@ target_link_libraries(machina_level_smoke PRIVATE machina_engine)
 add_test(NAME level_smoke COMMAND machina_level_smoke)
 set_tests_properties(level_smoke PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:machina_level_smoke>")
 
-function(machina_copy_materialx_libraries target)
-    add_custom_command(
-        TARGET "${target}"
-        POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E make_directory
-                "$<TARGET_FILE_DIR:${target}>/${MACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT}"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory
-                "${MACHINA_MATERIALX_LIBRARY_SOURCE_DIR}"
-                "$<TARGET_FILE_DIR:${target}>/${MACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT}/libraries")
-endfunction()
-
 function(machina_copy_assets target)
     add_custom_command(
         TARGET "${target}"
@@ -126,25 +88,15 @@ function(machina_copy_assets target)
                 "$<TARGET_FILE_DIR:${target}>/${MACHINA_ASSETS_RUNTIME_ROOT}")
 endfunction()
 
-function(machina_copy_usd_runtime target)
-    if(MACHINA_USD_RUNTIME_DLLS)
-        add_custom_command(
-            TARGET "${target}"
-            POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${MACHINA_USD_RUNTIME_DLLS}
-                    "$<TARGET_FILE_DIR:${target}>")
-    endif()
-endfunction()
-
-machina_copy_materialx_libraries(machina)
-machina_copy_materialx_libraries(machina_level_smoke)
 machina_copy_assets(machina)
 machina_copy_assets(machina_level_smoke)
-machina_copy_usd_runtime(machina)
-machina_copy_usd_runtime(machina_level_smoke)
+machina_copy_nvidia_usd_runtime(machina)
+machina_copy_nvidia_usd_runtime(machina_level_smoke)
 
 include(cmake/MakeDistribution.cmake)
 
 machina_add_distribution_target(
     TARGET machina
-    OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib")
+    OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib"
+    NVIDIA_USD_ROOT "${MACHINA_NVIDIA_USD_ROOT}"
+    MATERIALX_LIBRARY_RUNTIME_ROOT "${MACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT}")

@@ -34,13 +34,18 @@ function(machina_msvc_redist_dlls output_variable)
 endfunction()
 
 function(machina_add_distribution_target)
-  cmake_parse_arguments(MACHINA_DISTRIB "" "TARGET;OUTPUT_DIR" "" ${ARGN})
+  cmake_parse_arguments(
+    MACHINA_DISTRIB
+    ""
+    "TARGET;OUTPUT_DIR;NVIDIA_USD_ROOT;MATERIALX_LIBRARY_RUNTIME_ROOT"
+    ""
+    ${ARGN})
 
   if(MACHINA_DISTRIB_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unexpected arguments: ${MACHINA_DISTRIB_UNPARSED_ARGUMENTS}")
   endif()
 
-  foreach(required TARGET OUTPUT_DIR)
+  foreach(required TARGET OUTPUT_DIR NVIDIA_USD_ROOT MATERIALX_LIBRARY_RUNTIME_ROOT)
     if(NOT MACHINA_DISTRIB_${required})
       message(FATAL_ERROR "machina_add_distribution_target requires ${required}")
     endif()
@@ -59,23 +64,19 @@ function(machina_add_distribution_target)
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "$<TARGET_FILE:${MACHINA_DISTRIB_TARGET}>"
             "${MACHINA_DISTRIB_OUTPUT_DIR}"
-    COMMAND
-      powershell -NoProfile -ExecutionPolicy Bypass -Command
-      "Get-ChildItem -LiteralPath '$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>' -Filter '*.dll' | Copy-Item -Destination '${MACHINA_DISTRIB_OUTPUT_DIR}' -Force"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>/usd"
-            "${MACHINA_DISTRIB_OUTPUT_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
             "$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>/assets"
             "${MACHINA_DISTRIB_OUTPUT_DIR}/assets"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-            "$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>/materialx"
-            "${MACHINA_DISTRIB_OUTPUT_DIR}/materialx"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-            "$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>/usd_plugins"
-            "${MACHINA_DISTRIB_OUTPUT_DIR}/usd_plugins"
+    COMMAND
+            "${CMAKE_COMMAND}"
+            "-DMACHINA_NVIDIA_USD_ROOT=${MACHINA_DISTRIB_NVIDIA_USD_ROOT}"
+            "-DMACHINA_NVIDIA_USD_RUNTIME_DIR=${MACHINA_DISTRIB_OUTPUT_DIR}"
+            "-DMACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT=${MACHINA_DISTRIB_MATERIALX_LIBRARY_RUNTIME_ROOT}"
+            -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CopyNvidiaUsdRuntime.cmake"
     DEPENDS "${MACHINA_DISTRIB_TARGET}"
     COMMENT "Assembling machina distribution")
+
+  add_dependencies(distrib "${MACHINA_DISTRIB_TARGET}")
 
   if(msvc_redist_dlls)
     add_custom_command(
