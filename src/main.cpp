@@ -1,7 +1,7 @@
-#include "machina/LevelInstantiator.hpp"
-#include "machina/MaterialXShaderGenerator.hpp"
-#include "machina/Renderer.hpp"
-#include "machina/UsdLevelLoader.hpp"
+#include <machina/level_instantiator.hpp>
+#include <machina/materialx_shader_generator.hpp>
+#include <machina/renderer.hpp>
+#include <machina/usd_level_loader.hpp>
 
 #include <entt/entt.hpp>
 #include <raylib.h>
@@ -94,10 +94,10 @@ main()
     UpdateCamera(&camera, CAMERA_ORBITAL);
 
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(Color{ 63, 63, 63, 255 });
 
     BeginMode3D(camera);
-    renderer.draw(registry);
+    renderer.draw(registry, camera);
     DrawGrid(20, 1.0F);
     EndMode3D();
 

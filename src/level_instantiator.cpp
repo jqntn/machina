@@ -1,6 +1,6 @@
-#include "machina/LevelInstantiator.hpp"
+#include <machina/level_instantiator.hpp>
 
-#include "machina/Ecs.hpp"
+#include <machina/ecs.hpp>
 
 namespace machina {
 

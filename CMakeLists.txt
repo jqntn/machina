@@ -19,10 +19,10 @@ include(cmake/NvidiaUsd.cmake)
 machina_add_nvidia_usd_sdk()
 
 set(MACHINA_ENGINE_SOURCES
-    src/LevelInstantiator.cpp
-    src/MaterialXShaderGenerator.cpp
-    src/Renderer.cpp
-    src/UsdLevelLoader.cpp)
+    src/level_instantiator.cpp
+    src/materialx_shader_generator.cpp
+    src/renderer.cpp
+    src/usd_level_loader.cpp)
 
 set(MACHINA_ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(MACHINA_ASSETS_RUNTIME_ROOT "assets")

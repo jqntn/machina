@@ -1,4 +1,4 @@
-#include "machina/MaterialXShaderGenerator.hpp"
+#include <machina/materialx_shader_generator.hpp>
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/Util.h>
@@ -13,6 +13,7 @@
 #include <cctype>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace machina {
@@ -78,8 +79,8 @@ xmlEscaped(const std::string& value)
 std::string
 materialDocumentXml(const MaterialDescription& material)
 {
-  const std::string materialName = sanitizeIdentifier(material.name);
-  const std::string shaderName = materialName + "_shader";
+  const std::string materialName = "material";
+  const std::string shaderName = "material_shader";
 
   std::ostringstream xml;
   xml << "<?xml version=\"1.0\"?>\n";
@@ -107,6 +108,43 @@ materialDocumentXml(const MaterialDescription& material)
   xml << "</materialx>\n";
 
   return xml.str();
+}
+
+void
+replaceAll(std::string& value, std::string_view from, std::string_view to)
+{
+  std::size_t offset = 0;
+  while ((offset = value.find(from, offset)) != std::string::npos) {
+    value.replace(offset, from.size(), to);
+    offset += to.size();
+  }
+}
+
+std::string
+flatVaryingSource(std::string source)
+{
+  replaceAll(source, "    vec3 normalWorld;", "    flat vec3 normalWorld;");
+  replaceAll(source, "    vec3 tangentWorld;", "    flat vec3 tangentWorld;");
+  return source;
+}
+
+std::string
+raylibVertexSource(std::string source)
+{
+  replaceAll(source,
+             "uniform mat4 u_viewProjectionMatrix = mat4(1.0);",
+             "uniform mat4 u_worldViewProjectionMatrix = mat4(1.0);");
+  replaceAll(source,
+             "gl_Position = u_viewProjectionMatrix * hPositionWorld;",
+             "gl_Position = u_worldViewProjectionMatrix * "
+             "vec4(i_position, 1.0);");
+  return flatVaryingSource(std::move(source));
+}
+
+std::string
+raylibFragmentSource(std::string source)
+{
+  return flatVaryingSource(std::move(source));
 }
 
 }
@@ -155,13 +193,21 @@ MaterialXShaderGenerator::generate(const MaterialDescription& material) const
       MaterialX::GlslShaderGenerator::create();
     MaterialX::GenContext context(generator);
     context.registerSourceCodeSearchPath(searchPath);
-    MaterialX::ShaderPtr shader = generator->generate(
-      sanitizeIdentifier(material.name), renderables.front(), context);
+
+    MaterialX::NodeDefPtr directionalLight =
+      document->getNodeDef("ND_directional_light");
+    if (directionalLight) {
+      MaterialX::HwShaderGenerator::bindLightShader(
+        *directionalLight, 1, context);
+    }
+
+    MaterialX::ShaderPtr shader =
+      generator->generate("material", renderables.front(), context);
 
     result.shader.vertexSource =
-      shader->getSourceCode(MaterialX::Stage::VERTEX);
+      raylibVertexSource(shader->getSourceCode(MaterialX::Stage::VERTEX));
     result.shader.fragmentSource =
-      shader->getSourceCode(MaterialX::Stage::PIXEL);
+      raylibFragmentSource(shader->getSourceCode(MaterialX::Stage::PIXEL));
 
     if (result.shader.vertexSource.empty() ||
         result.shader.fragmentSource.empty()) {

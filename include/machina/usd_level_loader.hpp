@@ -1,6 +1,6 @@
 #pragma once
 
-#include "machina/LevelDescription.hpp"
+#include <machina/level_description.hpp>
 
 #include <filesystem>
 
