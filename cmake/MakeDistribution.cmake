@@ -1,28 +1,12 @@
 function(machina_msvc_redist_dlls output_variable)
-  if(NOT DEFINED CMAKE_CXX_COMPILER OR CMAKE_CXX_COMPILER STREQUAL "")
-    set("${output_variable}" "" PARENT_SCOPE)
-    return()
-  endif()
-
-  if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
-    set("${output_variable}" "" PARENT_SCOPE)
-    return()
-  endif()
-
   get_filename_component(cl_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
   get_filename_component(vc_dir "${cl_dir}/../../../../../.." ABSOLUTE)
-  set(msvc_redist_root "${vc_dir}/Redist/MSVC")
 
   file(
     GLOB
     msvc_crt_dirs
     LIST_DIRECTORIES true
-    "${msvc_redist_root}/*/x64/Microsoft.VC*.CRT")
-
-  if(NOT msvc_crt_dirs)
-    set("${output_variable}" "" PARENT_SCOPE)
-    return()
-  endif()
+    "${vc_dir}/Redist/MSVC/*/x64/Microsoft.VC*.CRT")
 
   list(SORT msvc_crt_dirs COMPARE NATURAL)
   list(LENGTH msvc_crt_dirs msvc_crt_dir_count)
@@ -78,11 +62,9 @@ function(machina_add_distribution_target)
 
   add_dependencies(distrib "${MACHINA_DISTRIB_TARGET}")
 
-  if(msvc_redist_dlls)
-    add_custom_command(
-      TARGET distrib
-      POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${msvc_redist_dlls}
-              "${MACHINA_DISTRIB_OUTPUT_DIR}")
-  endif()
+  add_custom_command(
+    TARGET distrib
+    POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${msvc_redist_dlls}
+            "${MACHINA_DISTRIB_OUTPUT_DIR}")
 endfunction()

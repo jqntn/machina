@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(machina LANGUAGES CXX)
 
-if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
