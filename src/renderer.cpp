@@ -389,8 +389,9 @@ void
 configureStaticLightingUniforms(const UploadedMaterial& material)
 {
   const Shader& shader = material.material.shader;
-  const Vector3 direction = Vector3Normalize(Vector3{ -0.35F, -1.0F, -0.45F });
-  const Vector3 color = { 1.0F, 0.96F, 0.9F };
+  const Vector3 direction =
+    Vector3Normalize(Vector3{ -4.076245F, -5.903862F, 1.005454F });
+  const Vector3 color = { 1.0F, 1.0F, 1.0F };
   const int envMips = 1;
   const int envSamples = 8;
 
