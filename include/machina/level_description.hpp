@@ -14,15 +14,15 @@ struct Diagnostic
 
 struct Vec2
 {
-  float x = 0.0F;
-  float y = 0.0F;
+  float x = 0.0f;
+  float y = 0.0f;
 };
 
 struct Vec3
 {
-  float x = 0.0F;
-  float y = 0.0F;
-  float z = 0.0F;
+  float x = 0.0f;
+  float y = 0.0f;
+  float z = 0.0f;
 };
 
 struct MeshVertex
@@ -54,7 +54,7 @@ struct MaterialDescription
   std::string nodeCategory;
   std::string nodeType;
   std::vector<MaterialInput> inputs;
-  std::array<float, 3> baseColor = { 1.0F, 1.0F, 1.0F };
+  std::array<float, 3> baseColor = { 1.0f, 1.0f, 1.0f };
 };
 
 struct EntityDescription
@@ -64,8 +64,8 @@ struct EntityDescription
   std::size_t mesh = 0;
   std::size_t material = 0;
   std::array<float, 16> transform = {
-    1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-    0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F,
+    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
   };
 };
 
@@ -76,7 +76,7 @@ struct LevelDescription
   std::vector<EntityDescription> entities;
   std::vector<Diagnostic> diagnostics;
 
-  [[nodiscard]] bool ok() const { return diagnostics.empty(); }
+  [[nodiscard]] bool Ok() const { return diagnostics.empty(); }
 };
 
 }

@@ -21,14 +21,14 @@ extern "C"
 namespace {
 
 std::filesystem::path
-sampleScenePath()
+SampleScenePath()
 {
   return std::filesystem::current_path() / MACHINA_ASSETS_ROOT / "scenes" /
          "suzannes.usda";
 }
 
 void
-printDiagnostics(std::string_view label,
+PrintDiagnostics(std::string_view label,
                  const std::vector<machina::Diagnostic>& diagnostics)
 {
   for (const machina::Diagnostic& diagnostic : diagnostics) {
@@ -37,7 +37,7 @@ printDiagnostics(std::string_view label,
 }
 
 void
-drawFps()
+DrawFps()
 {
   DrawText(TextFormat("%d", GetFPS()), 8, 4, 30, GREEN);
 }
@@ -48,10 +48,10 @@ int
 main()
 {
   machina::UsdLevelLoader loader;
-  machina::LevelDescription level = loader.load(sampleScenePath());
+  machina::LevelDescription level = loader.Load(SampleScenePath());
 
-  if (!level.ok()) {
-    printDiagnostics("usd", level.diagnostics);
+  if (!level.Ok()) {
+    PrintDiagnostics("usd", level.diagnostics);
     return 1;
   }
 
@@ -69,22 +69,22 @@ main()
     std::filesystem::current_path() / MACHINA_MATERIALX_LIBRARY_ROOT);
   machina::Renderer renderer;
   std::vector<machina::Diagnostic> rendererDiagnostics =
-    renderer.load(level, shaderGenerator);
+    renderer.Load(level, shaderGenerator);
   if (!rendererDiagnostics.empty()) {
-    printDiagnostics("renderer", rendererDiagnostics);
+    PrintDiagnostics("renderer", rendererDiagnostics);
     CloseWindow();
     return 1;
   }
 
   entt::registry registry;
-  machina::LevelInstantiator().instantiate(registry, level);
+  machina::LevelInstantiator().Instantiate(registry, level);
 
   bool showFps = false;
   Camera camera = {
-    .position = Vector3Scale(Vector3One(), 6.0F),
+    .position = Vector3Scale(Vector3One(), 6.0f),
     .target = Vector3Zero(),
-    .up = Vector3{ 0.0F, 1.0F, 0.0F },
-    .fovy = 60.0F,
+    .up = Vector3{ 0.0f, 1.0f, 0.0f },
+    .fovy = 60.0f,
     .projection = CAMERA_PERSPECTIVE,
   };
 
@@ -96,12 +96,12 @@ main()
     ClearBackground(Color{ 63, 63, 63, 255 });
 
     BeginMode3D(camera);
-    renderer.draw(registry, camera);
-    DrawGrid(20, 1.0F);
+    renderer.Draw(registry, camera);
+    DrawGrid(20, 1.0f);
     EndMode3D();
 
     if (showFps) {
-      drawFps();
+      DrawFps();
     }
 
     EndDrawing();

@@ -18,7 +18,7 @@ struct ShaderGenerationResult
   GeneratedShader shader;
   std::vector<Diagnostic> diagnostics;
 
-  [[nodiscard]] bool ok() const { return diagnostics.empty(); }
+  [[nodiscard]] bool Ok() const { return diagnostics.empty(); }
 };
 
 class MaterialXShaderGenerator
@@ -26,7 +26,7 @@ class MaterialXShaderGenerator
 public:
   explicit MaterialXShaderGenerator(std::filesystem::path materialXRoot);
 
-  [[nodiscard]] ShaderGenerationResult generate(
+  [[nodiscard]] ShaderGenerationResult Generate(
     const MaterialDescription& material) const;
 
 private:

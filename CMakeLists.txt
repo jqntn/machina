@@ -48,6 +48,18 @@ find_program(
     NAMES clang-format clang-format.exe
     HINTS "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/bin")
 
+find_program(
+    CLANG_TIDY_EXE
+    NAMES clang-tidy clang-tidy.exe
+    HINTS "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/bin")
+
+set(MACHINA_CLANG_TIDY
+    "${CLANG_TIDY_EXE}"
+    "--config-file=${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+    "--header-filter=^.*machina[\\\\/](include|src|tests)[\\\\/]"
+    "--extra-arg=--target=x86_64-pc-windows-msvc"
+    "--extra-arg=/EHsc")
+
 file(
     GLOB_RECURSE
     MACHINA_FORMAT_SOURCES
@@ -65,11 +77,18 @@ add_custom_target(
 add_dependencies(machina_engine format)
 add_dependencies(machina format)
 
+set_target_properties(
+    machina_engine
+    machina
+    PROPERTIES CXX_CLANG_TIDY "${MACHINA_CLANG_TIDY}")
+
 enable_testing()
 
 add_executable(machina_level_smoke tests/level_smoke.cpp)
 target_link_libraries(machina_level_smoke PRIVATE machina_engine)
 add_dependencies(machina_level_smoke machina)
+
+set_target_properties(machina_level_smoke PROPERTIES CXX_CLANG_TIDY "${MACHINA_CLANG_TIDY}")
 
 add_test(NAME level_smoke COMMAND machina_level_smoke)
 set_tests_properties(level_smoke PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:machina_level_smoke>")

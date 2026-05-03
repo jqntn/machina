@@ -21,9 +21,8 @@
 namespace machina {
 
 Matrix
-raylibMatrixFromTransform(const std::array<float, 16>& transform)
+RaylibMatrixFromTransform(const std::array<float, 16>& transform)
 {
-  // USD/Gf stores row-vector transforms; raylib expects OpenGL-style columns.
   return { transform[0], transform[4], transform[8],  transform[12],
            transform[1], transform[5], transform[9],  transform[13],
            transform[2], transform[6], transform[10], transform[14],
@@ -44,13 +43,13 @@ struct DrawCommand
 };
 
 unsigned char
-colorByte(float value)
+ColorByte(float value)
 {
-  return static_cast<unsigned char>(std::clamp(value, 0.0F, 1.0F) * 255.0F);
+  return static_cast<unsigned char>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
 }
 
 std::string
-sanitizeIdentifier(std::string_view value)
+SanitizeIdentifier(std::string_view value)
 {
   std::string result;
   result.reserve(value.size());
@@ -75,7 +74,7 @@ sanitizeIdentifier(std::string_view value)
 }
 
 std::string
-shaderCacheKey(const MaterialDescription& material)
+ShaderCacheKey(const MaterialDescription& material)
 {
   std::vector<std::pair<std::string, std::string>> inputs;
   inputs.reserve(material.inputs.size());
@@ -96,13 +95,13 @@ shaderCacheKey(const MaterialDescription& material)
 }
 
 std::string
-materialUniformName(const MaterialInput& input)
+MaterialUniformName(const MaterialInput& input)
 {
-  return std::string(materialShaderName) + '_' + sanitizeIdentifier(input.name);
+  return std::string(materialShaderName) + '_' + SanitizeIdentifier(input.name);
 }
 
 std::string
-normalizedInputValue(std::string value)
+NormalizedInputValue(std::string value)
 {
   for (char& character : value) {
     if (character == ',' || character == '(' || character == ')') {
@@ -114,11 +113,11 @@ normalizedInputValue(std::string value)
 }
 
 bool
-parseFloatValues(const std::string& value,
+ParseFloatValues(const std::string& value,
                  std::array<float, 4>& parsed,
                  std::size_t count)
 {
-  std::istringstream stream(normalizedInputValue(value));
+  std::istringstream stream(NormalizedInputValue(value));
   for (std::size_t index = 0; index < count; ++index) {
     if (!(stream >> parsed[index])) {
       return false;
@@ -130,9 +129,9 @@ parseFloatValues(const std::string& value,
 }
 
 bool
-parseIntValue(const std::string& value, int& parsed)
+ParseIntValue(const std::string& value, int& parsed)
 {
-  std::istringstream stream(normalizedInputValue(value));
+  std::istringstream stream(NormalizedInputValue(value));
   if (!(stream >> parsed)) {
     return false;
   }
@@ -142,7 +141,7 @@ parseIntValue(const std::string& value, int& parsed)
 }
 
 bool
-parseBoolValue(std::string value, int& parsed)
+ParseBoolValue(std::string value, int& parsed)
 {
   for (char& character : value) {
     character =
@@ -163,39 +162,39 @@ parseBoolValue(std::string value, int& parsed)
 }
 
 bool
-configureUniformValue(const MaterialInput& input,
+ConfigureUniformValue(const MaterialInput& input,
                       UploadedMaterialUniform& uniform)
 {
   if (input.type == "float") {
     uniform.uniformType = SHADER_UNIFORM_FLOAT;
-    return parseFloatValues(input.value, uniform.floatValues, 1);
+    return ParseFloatValues(input.value, uniform.floatValues, 1);
   }
 
   if (input.type == "vector2") {
     uniform.uniformType = SHADER_UNIFORM_VEC2;
-    return parseFloatValues(input.value, uniform.floatValues, 2);
+    return ParseFloatValues(input.value, uniform.floatValues, 2);
   }
 
   if (input.type == "vector3" || input.type == "color3") {
     uniform.uniformType = SHADER_UNIFORM_VEC3;
-    return parseFloatValues(input.value, uniform.floatValues, 3);
+    return ParseFloatValues(input.value, uniform.floatValues, 3);
   }
 
   if (input.type == "integer") {
     uniform.uniformType = SHADER_UNIFORM_INT;
-    return parseIntValue(input.value, uniform.intValues[0]);
+    return ParseIntValue(input.value, uniform.intValues[0]);
   }
 
   if (input.type == "boolean") {
     uniform.uniformType = SHADER_UNIFORM_INT;
-    return parseBoolValue(input.value, uniform.intValues[0]);
+    return ParseBoolValue(input.value, uniform.intValues[0]);
   }
 
   return false;
 }
 
 void
-configureShader(Shader& shader)
+ConfigureShader(Shader& shader)
 {
   const int position = GetShaderLocationAttrib(shader, "i_position");
   if (position >= 0) {
@@ -235,7 +234,7 @@ configureShader(Shader& shader)
 }
 
 UploadedMaterial
-uploadedMaterial(Material material)
+MakeUploadedMaterial(Material material)
 {
   UploadedMaterial uploaded = {};
   uploaded.material = material;
@@ -265,17 +264,17 @@ uploadedMaterial(Material material)
 }
 
 std::vector<UploadedMaterialUniform>
-uploadedMaterialUniforms(const Shader& shader,
-                         const MaterialDescription& material,
-                         std::vector<Diagnostic>& diagnostics)
+MakeUploadedMaterialUniforms(const Shader& shader,
+                             const MaterialDescription& material,
+                             std::vector<Diagnostic>& diagnostics)
 {
   std::vector<UploadedMaterialUniform> uniforms;
 
   for (const MaterialInput& input : material.inputs) {
     UploadedMaterialUniform uniform = {};
     uniform.location =
-      GetShaderLocation(shader, materialUniformName(input).c_str());
-    if (!configureUniformValue(input, uniform)) {
+      GetShaderLocation(shader, MaterialUniformName(input).c_str());
+    if (!ConfigureUniformValue(input, uniform)) {
       diagnostics.push_back({ "Material " + material.path +
                               " has unsupported or invalid input " +
                               input.name + " of type " + input.type });
@@ -291,7 +290,7 @@ uploadedMaterialUniforms(const Shader& shader,
 }
 
 void
-setIntUniform(const Shader& shader, int location, int value)
+SetIntUniform(const Shader& shader, int location, int value)
 {
   if (location >= 0) {
     SetShaderValue(shader, location, &value, SHADER_UNIFORM_INT);
@@ -299,7 +298,7 @@ setIntUniform(const Shader& shader, int location, int value)
 }
 
 void
-setFloatUniform(const Shader& shader, int location, float value)
+SetFloatUniform(const Shader& shader, int location, float value)
 {
   if (location >= 0) {
     SetShaderValue(shader, location, &value, SHADER_UNIFORM_FLOAT);
@@ -307,7 +306,7 @@ setFloatUniform(const Shader& shader, int location, float value)
 }
 
 void
-setVec3Uniform(const Shader& shader, int location, Vector3 value)
+SetVec3Uniform(const Shader& shader, int location, Vector3 value)
 {
   if (location >= 0) {
     SetShaderValue(shader, location, &value, SHADER_UNIFORM_VEC3);
@@ -315,7 +314,7 @@ setVec3Uniform(const Shader& shader, int location, Vector3 value)
 }
 
 void
-setMaterialParameterUniforms(const UploadedMaterial& material)
+SetMaterialParameterUniforms(const UploadedMaterial& material)
 {
   const Shader& shader = material.material.shader;
   for (const UploadedMaterialUniform& uniform : material.parameterUniforms) {
@@ -344,17 +343,17 @@ setMaterialParameterUniforms(const UploadedMaterial& material)
 }
 
 Vector3
-fallbackTangent(const Vec3& normal)
+FallbackTangent(const Vec3& normal)
 {
   const Vector3 n = Vector3Normalize(Vector3{ normal.x, normal.y, normal.z });
-  const Vector3 reference = std::abs(n.y) < 0.999F
-                              ? Vector3{ 0.0F, 1.0F, 0.0F }
-                              : Vector3{ 1.0F, 0.0F, 0.0F };
+  const Vector3 reference = std::abs(n.y) < 0.999f
+                              ? Vector3{ 0.0f, 1.0f, 0.0f }
+                              : Vector3{ 1.0f, 0.0f, 0.0f };
   return Vector3Normalize(Vector3CrossProduct(reference, n));
 }
 
 Texture2D
-loadNeutralEnvironmentTexture()
+LoadNeutralEnvironmentTexture()
 {
   Image image = GenImageColor(4, 2, Color{ 214, 218, 222, 255 });
   Texture2D texture = LoadTextureFromImage(image);
@@ -366,56 +365,56 @@ loadNeutralEnvironmentTexture()
 }
 
 void
-setMaterialSampler(Material& material, int mapSlot, int location)
+SetMaterialSampler(Material& material, int mapSlot, int location)
 {
   if (location < 0) {
     return;
   }
 
   material.shader.locs[SHADER_LOC_MAP_DIFFUSE + mapSlot] = location;
-  material.maps[mapSlot].texture = loadNeutralEnvironmentTexture();
+  material.maps[mapSlot].texture = LoadNeutralEnvironmentTexture();
 }
 
 void
-configureMaterialEnvironmentMaps(UploadedMaterial& material)
+ConfigureMaterialEnvironmentMaps(UploadedMaterial& material)
 {
-  setMaterialSampler(material.material,
+  SetMaterialSampler(material.material,
                      environmentRadianceMapSlot,
                      material.envRadianceLocation);
-  setMaterialSampler(material.material,
+  SetMaterialSampler(material.material,
                      environmentIrradianceMapSlot,
                      material.envIrradianceLocation);
 }
 
 void
-configureStaticLightingUniforms(const UploadedMaterial& material)
+ConfigureStaticLightingUniforms(const UploadedMaterial& material)
 {
   const Shader& shader = material.material.shader;
   const Vector3 direction =
-    Vector3Normalize(Vector3{ -4.076245F, -5.903862F, 1.005454F });
-  const Vector3 color = { 1.0F, 1.0F, 1.0F };
+    Vector3Normalize(Vector3{ -4.076245f, -5.903862f, 1.005454f });
+  const Vector3 color = { 1.0f, 1.0f, 1.0f };
   const int envMips = 1;
   const int envSamples = 8;
 
-  setFloatUniform(shader, material.envLightIntensityLocation, 0.4F);
-  setIntUniform(shader, material.envRadianceMipsLocation, envMips);
-  setIntUniform(shader, material.envRadianceSamplesLocation, envSamples);
-  setIntUniform(shader, material.activeLightCountLocation, 1);
-  setIntUniform(shader, material.lightTypeLocation, 1);
-  setVec3Uniform(shader, material.lightDirectionLocation, direction);
-  setVec3Uniform(shader, material.lightColorLocation, color);
-  setFloatUniform(shader, material.lightIntensityLocation, 2.0F);
+  SetFloatUniform(shader, material.envLightIntensityLocation, 0.4f);
+  SetIntUniform(shader, material.envRadianceMipsLocation, envMips);
+  SetIntUniform(shader, material.envRadianceSamplesLocation, envSamples);
+  SetIntUniform(shader, material.activeLightCountLocation, 1);
+  SetIntUniform(shader, material.lightTypeLocation, 1);
+  SetVec3Uniform(shader, material.lightDirectionLocation, direction);
+  SetVec3Uniform(shader, material.lightColorLocation, color);
+  SetFloatUniform(shader, material.lightIntensityLocation, 2.0f);
 }
 
 void
-configureFrameUniforms(const UploadedMaterial& material, const Camera& camera)
+ConfigureFrameUniforms(const UploadedMaterial& material, const Camera& camera)
 {
-  setVec3Uniform(
+  SetVec3Uniform(
     material.material.shader, material.viewPositionLocation, camera.position);
 }
 
 bool
-drawCommandLess(const std::vector<UploadedMaterial>& materials,
+DrawCommandLess(const std::vector<UploadedMaterial>& materials,
                 const DrawCommand& left,
                 const DrawCommand& right)
 {
@@ -434,7 +433,7 @@ drawCommandLess(const std::vector<UploadedMaterial>& materials,
 }
 
 Mesh
-uploadMesh(const MeshDescription& description)
+UploadMeshDescription(const MeshDescription& description)
 {
   Mesh mesh = {};
   mesh.vertexCount = static_cast<int>(description.vertices.size());
@@ -459,11 +458,11 @@ uploadMesh(const MeshDescription& description)
     mesh.normals[index * 3 + 0] = vertex.normal.x;
     mesh.normals[index * 3 + 1] = vertex.normal.y;
     mesh.normals[index * 3 + 2] = vertex.normal.z;
-    const Vector3 tangent = fallbackTangent(vertex.normal);
+    const Vector3 tangent = FallbackTangent(vertex.normal);
     mesh.tangents[index * 4 + 0] = tangent.x;
     mesh.tangents[index * 4 + 1] = tangent.y;
     mesh.tangents[index * 4 + 2] = tangent.z;
-    mesh.tangents[index * 4 + 3] = 1.0F;
+    mesh.tangents[index * 4 + 3] = 1.0f;
     mesh.texcoords[index * 2 + 0] = vertex.texcoord.x;
     mesh.texcoords[index * 2 + 1] = vertex.texcoord.y;
   }
@@ -496,22 +495,22 @@ Renderer::~Renderer()
 }
 
 std::vector<Diagnostic>
-Renderer::load(const LevelDescription& level,
+Renderer::Load(const LevelDescription& level,
                const MaterialXShaderGenerator& generator)
 {
   std::vector<Diagnostic> diagnostics;
   std::unordered_map<std::string, std::size_t> shaderCache;
 
   for (const MaterialDescription& materialDescription : level.materials) {
-    const std::string cacheKey = shaderCacheKey(materialDescription);
+    const std::string cacheKey = ShaderCacheKey(materialDescription);
     std::size_t shaderIndex = 0;
     const auto cachedShader = shaderCache.find(cacheKey);
     if (cachedShader != shaderCache.end()) {
       shaderIndex = cachedShader->second;
     } else {
       ShaderGenerationResult generated =
-        generator.generate(materialDescription);
-      if (!generated.ok()) {
+        generator.Generate(materialDescription);
+      if (!generated.Ok()) {
         diagnostics.insert(diagnostics.end(),
                            generated.diagnostics.begin(),
                            generated.diagnostics.end());
@@ -528,7 +527,7 @@ Renderer::load(const LevelDescription& level,
         return diagnostics;
       }
 
-      configureShader(shader);
+      ConfigureShader(shader);
       shaderIndex = shaders.size();
       shaders.push_back(shader);
       shaderCache.emplace(cacheKey, shaderIndex);
@@ -537,36 +536,36 @@ Renderer::load(const LevelDescription& level,
     Material material = LoadMaterialDefault();
     material.shader = shaders[shaderIndex];
     material.maps[MATERIAL_MAP_DIFFUSE].color =
-      Color{ colorByte(materialDescription.baseColor[0]),
-             colorByte(materialDescription.baseColor[1]),
-             colorByte(materialDescription.baseColor[2]),
+      Color{ ColorByte(materialDescription.baseColor[0]),
+             ColorByte(materialDescription.baseColor[1]),
+             ColorByte(materialDescription.baseColor[2]),
              255 };
-    UploadedMaterial uploaded = uploadedMaterial(material);
-    uploaded.parameterUniforms = uploadedMaterialUniforms(
+    UploadedMaterial uploaded = MakeUploadedMaterial(material);
+    uploaded.parameterUniforms = MakeUploadedMaterialUniforms(
       material.shader, materialDescription, diagnostics);
     if (!diagnostics.empty()) {
       return diagnostics;
     }
 
-    configureMaterialEnvironmentMaps(uploaded);
-    configureStaticLightingUniforms(uploaded);
+    ConfigureMaterialEnvironmentMaps(uploaded);
+    ConfigureStaticLightingUniforms(uploaded);
     materials.push_back(uploaded);
   }
 
   for (const MeshDescription& meshDescription : level.meshes) {
-    meshes.push_back(uploadMesh(meshDescription));
+    meshes.push_back(UploadMeshDescription(meshDescription));
   }
 
   return diagnostics;
 }
 
 void
-Renderer::draw(entt::registry& registry, const Camera& camera) const
+Renderer::Draw(entt::registry& registry, const Camera& camera) const
 {
   std::vector<DrawCommand> drawCommands;
 
   for (const UploadedMaterial& material : materials) {
-    configureFrameUniforms(material, camera);
+    ConfigureFrameUniforms(material, camera);
   }
 
   const auto view = registry.view<const Renderable, const Transform>();
@@ -581,19 +580,19 @@ Renderer::draw(entt::registry& registry, const Camera& camera) const
 
     drawCommands.push_back({ renderable.mesh,
                              renderable.material,
-                             raylibMatrixFromTransform(transform.world) });
+                             RaylibMatrixFromTransform(transform.world) });
   }
 
   std::ranges::sort(drawCommands,
                     [this](const DrawCommand& left, const DrawCommand& right) {
-                      return drawCommandLess(materials, left, right);
+                      return DrawCommandLess(materials, left, right);
                     });
 
   std::size_t activeMaterial = materials.size();
   for (const DrawCommand& command : drawCommands) {
     const UploadedMaterial& material = materials[command.material];
     if (command.material != activeMaterial) {
-      setMaterialParameterUniforms(material);
+      SetMaterialParameterUniforms(material);
       activeMaterial = command.material;
     }
 

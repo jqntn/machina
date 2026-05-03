@@ -10,7 +10,7 @@
 namespace machina {
 
 [[nodiscard]] Matrix
-raylibMatrixFromTransform(const std::array<float, 16>& transform);
+RaylibMatrixFromTransform(const std::array<float, 16>& transform);
 
 struct UploadedMaterialUniform
 {
@@ -47,10 +47,10 @@ public:
   Renderer& operator=(Renderer&&) = delete;
   ~Renderer();
 
-  [[nodiscard]] std::vector<Diagnostic> load(
+  [[nodiscard]] std::vector<Diagnostic> Load(
     const LevelDescription& level,
     const MaterialXShaderGenerator& generator);
-  void draw(entt::registry& registry, const Camera& camera) const;
+  void Draw(entt::registry& registry, const Camera& camera) const;
 
 private:
   std::vector<Shader> shaders;

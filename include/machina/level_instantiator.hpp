@@ -8,7 +8,7 @@ namespace machina {
 class LevelInstantiator
 {
 public:
-  void instantiate(entt::registry& registry,
+  void Instantiate(entt::registry& registry,
                    const LevelDescription& level) const;
 };
 

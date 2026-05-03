@@ -29,20 +29,20 @@ namespace machina {
 namespace {
 
 std::string
-pathOf(const UsdPrim& prim)
+PathOf(const UsdPrim& prim)
 {
   return prim ? prim.GetPath().GetString() : std::string("<invalid prim>");
 }
 
 std::string
-pathOf(const UsdShadeMaterial& material)
+PathOf(const UsdShadeMaterial& material)
 {
   return material ? material.GetPath().GetString()
                   : std::string("<invalid material>");
 }
 
 std::string
-scalar(double value)
+Scalar(double value)
 {
   std::ostringstream stream;
   stream << std::setprecision(9) << value;
@@ -51,7 +51,7 @@ scalar(double value)
 
 template<typename Vec>
 std::string
-vectorValue(const Vec& value, int count)
+VectorValue(const Vec& value, int count)
 {
   std::ostringstream stream;
   stream << std::setprecision(9);
@@ -68,7 +68,7 @@ vectorValue(const Vec& value, int count)
 }
 
 std::optional<std::string>
-valueString(const VtValue& value)
+ValueString(const VtValue& value)
 {
   if (value.IsHolding<bool>()) {
     return value.UncheckedGet<bool>() ? "true" : "false";
@@ -79,34 +79,34 @@ valueString(const VtValue& value)
   }
 
   if (value.IsHolding<float>()) {
-    return scalar(value.UncheckedGet<float>());
+    return Scalar(value.UncheckedGet<float>());
   }
 
   if (value.IsHolding<double>()) {
-    return scalar(value.UncheckedGet<double>());
+    return Scalar(value.UncheckedGet<double>());
   }
 
   if (value.IsHolding<GfVec2f>()) {
-    return vectorValue(value.UncheckedGet<GfVec2f>(), 2);
+    return VectorValue(value.UncheckedGet<GfVec2f>(), 2);
   }
 
   if (value.IsHolding<GfVec2d>()) {
-    return vectorValue(value.UncheckedGet<GfVec2d>(), 2);
+    return VectorValue(value.UncheckedGet<GfVec2d>(), 2);
   }
 
   if (value.IsHolding<GfVec3f>()) {
-    return vectorValue(value.UncheckedGet<GfVec3f>(), 3);
+    return VectorValue(value.UncheckedGet<GfVec3f>(), 3);
   }
 
   if (value.IsHolding<GfVec3d>()) {
-    return vectorValue(value.UncheckedGet<GfVec3d>(), 3);
+    return VectorValue(value.UncheckedGet<GfVec3d>(), 3);
   }
 
   return std::nullopt;
 }
 
 std::optional<std::string>
-materialXType(const SdfValueTypeName& usdType)
+MaterialXType(const SdfValueTypeName& usdType)
 {
   const std::string token = usdType.GetAsToken().GetString();
 
@@ -140,7 +140,7 @@ materialXType(const SdfValueTypeName& usdType)
 }
 
 std::string
-objectName(const UsdPrim& meshPrim)
+ObjectName(const UsdPrim& meshPrim)
 {
   UsdPrim objectPrim = meshPrim.GetParent();
   std::string name;
@@ -156,7 +156,7 @@ objectName(const UsdPrim& meshPrim)
 }
 
 std::array<float, 16>
-matrixValue(GfMatrix4d matrix, double metersPerUnit)
+MatrixValue(GfMatrix4d matrix, double metersPerUnit)
 {
   if (metersPerUnit != 1.0) {
     matrix[3][0] *= metersPerUnit;
@@ -177,7 +177,7 @@ matrixValue(GfMatrix4d matrix, double metersPerUnit)
 }
 
 std::string
-nodeCategoryFromId(const TfToken& id)
+NodeCategoryFromId(const TfToken& id)
 {
   std::string value = id.GetString();
 
@@ -194,30 +194,30 @@ nodeCategoryFromId(const TfToken& id)
 }
 
 std::optional<MaterialDescription>
-readMaterial(const UsdShadeMaterial& material,
+ReadMaterial(const UsdShadeMaterial& material,
              std::vector<Diagnostic>& diagnostics)
 {
   UsdShadeShader shader = material.ComputeSurfaceSource(TfToken("mtlx"));
 
   if (!shader) {
-    diagnostics.push_back({ "Material " + pathOf(material) +
+    diagnostics.push_back({ "Material " + PathOf(material) +
                             " has no outputs:mtlx:surface source" });
     return std::nullopt;
   }
 
   TfToken id;
   shader.GetIdAttr().Get(&id);
-  const std::string category = nodeCategoryFromId(id);
+  const std::string category = NodeCategoryFromId(id);
 
   if (category.empty()) {
-    diagnostics.push_back({ "Material " + pathOf(material) +
+    diagnostics.push_back({ "Material " + PathOf(material) +
                             " has an unsupported MaterialX shader id " +
                             id.GetString() });
     return std::nullopt;
   }
 
   MaterialDescription description;
-  description.path = pathOf(material);
+  description.path = PathOf(material);
   description.name = material.GetPrim().GetName().GetString();
   description.nodeCategory = category;
   description.nodeType = "surfaceshader";
@@ -232,8 +232,8 @@ readMaterial(const UsdShadeMaterial& material,
       continue;
     }
 
-    std::optional<std::string> type = materialXType(input.GetTypeName());
-    std::optional<std::string> stringValue = valueString(value);
+    std::optional<std::string> type = MaterialXType(input.GetTypeName());
+    std::optional<std::string> stringValue = ValueString(value);
     if (!type || !stringValue) {
       continue;
     }
@@ -248,7 +248,7 @@ readMaterial(const UsdShadeMaterial& material,
   }
 
   if (description.inputs.empty()) {
-    diagnostics.push_back({ "Material " + pathOf(material) +
+    diagnostics.push_back({ "Material " + PathOf(material) +
                             " has no supported MaterialX inputs" });
     return std::nullopt;
   }
@@ -257,7 +257,7 @@ readMaterial(const UsdShadeMaterial& material,
 }
 
 std::size_t
-interpolatedIndex(const TfToken& interpolation,
+InterpolatedIndex(const TfToken& interpolation,
                   std::size_t pointIndex,
                   std::size_t faceVertexIndex,
                   std::size_t faceIndex)
@@ -279,13 +279,13 @@ interpolatedIndex(const TfToken& interpolation,
 }
 
 Vec3
-vectorBetween(const GfVec3f& start, const GfVec3f& end)
+VectorBetween(const GfVec3f& start, const GfVec3f& end)
 {
   return { end[0] - start[0], end[1] - start[1], end[2] - start[2] };
 }
 
 Vec3
-cross(const Vec3& left, const Vec3& right)
+Cross(const Vec3& left, const Vec3& right)
 {
   return { left.y * right.z - left.z * right.y,
            left.z * right.x - left.x * right.z,
@@ -293,17 +293,17 @@ cross(const Vec3& left, const Vec3& right)
 }
 
 float
-length(const Vec3& value)
+Length(const Vec3& value)
 {
   return std::sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
 }
 
 Vec3
-normalized(Vec3 value)
+Normalized(Vec3 value)
 {
-  const float normalLength = length(value);
-  if (normalLength <= 0.0F) {
-    return { 0.0F, 1.0F, 0.0F };
+  const float normalLength = Length(value);
+  if (normalLength <= 0.0f) {
+    return { 0.0f, 1.0f, 0.0f };
   }
 
   return { value.x / normalLength,
@@ -312,34 +312,34 @@ normalized(Vec3 value)
 }
 
 Vec3
-triangleNormal(const GfVec3f& first,
+TriangleNormal(const GfVec3f& first,
                const GfVec3f& second,
                const GfVec3f& third)
 {
-  return normalized(
-    cross(vectorBetween(first, second), vectorBetween(first, third)));
+  return Normalized(
+    Cross(VectorBetween(first, second), VectorBetween(first, third)));
 }
 
 Vec3
-normalAt(const VtArray<GfVec3f>& normals,
+NormalAt(const VtArray<GfVec3f>& normals,
          const TfToken& interpolation,
          std::size_t pointIndex,
          std::size_t faceVertexIndex,
          std::size_t faceIndex)
 {
   const std::size_t index =
-    interpolatedIndex(interpolation, pointIndex, faceVertexIndex, faceIndex);
+    InterpolatedIndex(interpolation, pointIndex, faceVertexIndex, faceIndex);
 
   if (index >= normals.size()) {
-    return { 0.0F, 1.0F, 0.0F };
+    return { 0.0f, 1.0f, 0.0f };
   }
 
   const GfVec3f normal = normals[index];
-  return normalized({ normal[0], normal[1], normal[2] });
+  return Normalized({ normal[0], normal[1], normal[2] });
 }
 
 void
-readMeshNormals(const UsdGeomMesh& mesh,
+ReadMeshNormals(const UsdGeomMesh& mesh,
                 VtArray<GfVec3f>& normals,
                 TfToken& interpolation)
 {
@@ -359,14 +359,14 @@ readMeshNormals(const UsdGeomMesh& mesh,
 }
 
 Vec2
-texcoordAt(const VtArray<GfVec2f>& texcoords,
+TexcoordAt(const VtArray<GfVec2f>& texcoords,
            const TfToken& interpolation,
            std::size_t pointIndex,
            std::size_t faceVertexIndex,
            std::size_t faceIndex)
 {
   const std::size_t index =
-    interpolatedIndex(interpolation, pointIndex, faceVertexIndex, faceIndex);
+    InterpolatedIndex(interpolation, pointIndex, faceVertexIndex, faceIndex);
 
   if (index >= texcoords.size()) {
     return {};
@@ -377,7 +377,7 @@ texcoordAt(const VtArray<GfVec2f>& texcoords,
 }
 
 std::size_t
-usdLocalFaceVertexIndex(int faceVertexCount, int localIndex, bool isLeftHanded)
+UsdLocalFaceVertexIndex(int faceVertexCount, int localIndex, bool isLeftHanded)
 {
   if (!isLeftHanded) {
     return static_cast<std::size_t>(localIndex);
@@ -387,7 +387,7 @@ usdLocalFaceVertexIndex(int faceVertexCount, int localIndex, bool isLeftHanded)
 }
 
 bool
-readMesh(const UsdGeomMesh& mesh,
+ReadMesh(const UsdGeomMesh& mesh,
          double metersPerUnit,
          MeshDescription& description,
          std::vector<Diagnostic>& diagnostics)
@@ -402,7 +402,7 @@ readMesh(const UsdGeomMesh& mesh,
 
   if (points.empty() || faceVertexCounts.empty() || faceVertexIndices.empty()) {
     diagnostics.push_back(
-      { "Mesh " + pathOf(mesh.GetPrim()) + " has no polygon data" });
+      { "Mesh " + PathOf(mesh.GetPrim()) + " has no polygon data" });
     return false;
   }
 
@@ -410,7 +410,7 @@ readMesh(const UsdGeomMesh& mesh,
   mesh.GetSubdivisionSchemeAttr().Get(&subdivisionScheme);
   if (!subdivisionScheme.IsEmpty() &&
       subdivisionScheme != UsdGeomTokens->none) {
-    diagnostics.push_back({ "Mesh " + pathOf(mesh.GetPrim()) +
+    diagnostics.push_back({ "Mesh " + PathOf(mesh.GetPrim()) +
                             " uses unsupported subdivision scheme " +
                             subdivisionScheme.GetString() });
     return false;
@@ -418,7 +418,7 @@ readMesh(const UsdGeomMesh& mesh,
 
   VtArray<GfVec3f> normals;
   TfToken normalInterpolation;
-  readMeshNormals(mesh, normals, normalInterpolation);
+  ReadMeshNormals(mesh, normals, normalInterpolation);
   const bool useComputedFlatNormals = normals.empty();
 
   TfToken orientation;
@@ -441,7 +441,7 @@ readMesh(const UsdGeomMesh& mesh,
 
     if (faceVertexCount < 3) {
       diagnostics.push_back(
-        { "Mesh " + pathOf(mesh.GetPrim()) +
+        { "Mesh " + PathOf(mesh.GetPrim()) +
           " contains a face with fewer than three vertices" });
       return false;
     }
@@ -449,7 +449,7 @@ readMesh(const UsdGeomMesh& mesh,
     if (faceVertexOffset + static_cast<std::size_t>(faceVertexCount) >
         faceVertexIndices.size()) {
       diagnostics.push_back(
-        { "Mesh " + pathOf(mesh.GetPrim()) + " has invalid face indices" });
+        { "Mesh " + PathOf(mesh.GetPrim()) + " has invalid face indices" });
       return false;
     }
 
@@ -460,7 +460,7 @@ readMesh(const UsdGeomMesh& mesh,
 
       for (std::size_t trianglePoint = 0; trianglePoint < localIndices.size();
            ++trianglePoint) {
-        usdLocalIndices[trianglePoint] = usdLocalFaceVertexIndex(
+        usdLocalIndices[trianglePoint] = UsdLocalFaceVertexIndex(
           faceVertexCount, localIndices[trianglePoint], isLeftHanded);
         const std::size_t faceVertexIndex =
           faceVertexOffset + usdLocalIndices[trianglePoint];
@@ -469,13 +469,13 @@ readMesh(const UsdGeomMesh& mesh,
         if (pointIndices[trianglePoint] < 0 ||
             static_cast<std::size_t>(pointIndices[trianglePoint]) >=
               points.size()) {
-          diagnostics.push_back({ "Mesh " + pathOf(mesh.GetPrim()) +
+          diagnostics.push_back({ "Mesh " + PathOf(mesh.GetPrim()) +
                                   " references an invalid point index" });
           return false;
         }
       }
 
-      const Vec3 flatNormal = triangleNormal(points[pointIndices[0]],
+      const Vec3 flatNormal = TriangleNormal(points[pointIndices[0]],
                                              points[pointIndices[1]],
                                              points[pointIndices[2]]);
 
@@ -487,7 +487,7 @@ readMesh(const UsdGeomMesh& mesh,
 
         if (description.vertices.size() >
             std::numeric_limits<std::uint16_t>::max()) {
-          diagnostics.push_back({ "Mesh " + pathOf(mesh.GetPrim()) +
+          diagnostics.push_back({ "Mesh " + PathOf(mesh.GetPrim()) +
                                   " exceeds raylib 16-bit index capacity" });
           return false;
         }
@@ -495,7 +495,7 @@ readMesh(const UsdGeomMesh& mesh,
         const GfVec3f position = points[pointIndex];
         Vec3 vertexNormal = flatNormal;
         if (!useComputedFlatNormals) {
-          vertexNormal = normalAt(normals,
+          vertexNormal = NormalAt(normals,
                                   normalInterpolation,
                                   static_cast<std::size_t>(pointIndex),
                                   faceVertexIndex,
@@ -507,7 +507,7 @@ readMesh(const UsdGeomMesh& mesh,
               static_cast<float>(position[1] * metersPerUnit),
               static_cast<float>(position[2] * metersPerUnit) },
             vertexNormal,
-            texcoordAt(texcoords,
+            TexcoordAt(texcoords,
                        texcoordInterpolation,
                        static_cast<std::size_t>(pointIndex),
                        faceVertexIndex,
@@ -526,7 +526,7 @@ readMesh(const UsdGeomMesh& mesh,
 }
 
 LevelDescription
-UsdLevelLoader::load(const std::filesystem::path& path) const
+UsdLevelLoader::Load(const std::filesystem::path& path) const
 {
   LevelDescription level;
 
@@ -557,15 +557,15 @@ UsdLevelLoader::load(const std::filesystem::path& path) const
       UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial();
     if (!material) {
       level.diagnostics.push_back(
-        { "Mesh " + pathOf(prim) + " has no material binding" });
+        { "Mesh " + PathOf(prim) + " has no material binding" });
       continue;
     }
 
-    const std::string materialPath = pathOf(material);
+    const std::string materialPath = PathOf(material);
     auto materialIt = materialIndices.find(materialPath);
     if (materialIt == materialIndices.end()) {
       std::optional<MaterialDescription> materialDescription =
-        readMaterial(material, level.diagnostics);
+        ReadMaterial(material, level.diagnostics);
       if (!materialDescription) {
         continue;
       }
@@ -576,10 +576,10 @@ UsdLevelLoader::load(const std::filesystem::path& path) const
     }
 
     MeshDescription meshDescription;
-    meshDescription.path = pathOf(prim);
+    meshDescription.path = PathOf(prim);
     meshDescription.name = prim.GetName().GetString();
 
-    if (!readMesh(mesh, metersPerUnit, meshDescription, level.diagnostics)) {
+    if (!ReadMesh(mesh, metersPerUnit, meshDescription, level.diagnostics)) {
       continue;
     }
 
@@ -592,11 +592,11 @@ UsdLevelLoader::load(const std::filesystem::path& path) const
     }
 
     level.entities.push_back(
-      { pathOf(objectPrim),
-        objectName(prim),
+      { PathOf(objectPrim),
+        ObjectName(prim),
         meshIndex,
         materialIt->second,
-        matrixValue(xformCache.GetLocalToWorldTransform(objectPrim),
+        MatrixValue(xformCache.GetLocalToWorldTransform(objectPrim),
                     metersPerUnit) });
   }
 

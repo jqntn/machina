@@ -6,7 +6,7 @@
 namespace machina {
 
 void
-LevelInstantiator::instantiate(entt::registry& registry,
+LevelInstantiator::Instantiate(entt::registry& registry,
                                const LevelDescription& level) const
 {
   for (const auto& description : level.entities) {

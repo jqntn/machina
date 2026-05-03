@@ -26,7 +26,7 @@ namespace machina {
 namespace {
 
 std::string
-sanitizeIdentifier(const std::string& value)
+SanitizeIdentifier(const std::string& value)
 {
   std::string result;
   result.reserve(value.size());
@@ -51,7 +51,7 @@ sanitizeIdentifier(const std::string& value)
 }
 
 std::string
-xmlEscaped(const std::string& value)
+XmlEscaped(const std::string& value)
 {
   std::string result;
   result.reserve(value.size());
@@ -83,7 +83,7 @@ xmlEscaped(const std::string& value)
 }
 
 std::string
-materialDocumentXml(const MaterialDescription& material)
+MaterialDocumentXml(const MaterialDescription& material)
 {
   const std::string materialName = "material";
   const std::string shaderName = "material_shader";
@@ -91,13 +91,13 @@ materialDocumentXml(const MaterialDescription& material)
   std::ostringstream xml;
   xml << "<?xml version=\"1.0\"?>\n";
   xml << "<materialx version=\"1.39\" colorspace=\"lin_rec709\">\n";
-  xml << "  <surfacematerial name=\"" << xmlEscaped(materialName)
+  xml << "  <surfacematerial name=\"" << XmlEscaped(materialName)
       << "\" type=\"material\">\n";
   xml << "    <input name=\"surfaceshader\" type=\"surfaceshader\" nodename=\""
-      << xmlEscaped(shaderName) << "\" />\n";
+      << XmlEscaped(shaderName) << "\" />\n";
   xml << "  </surfacematerial>\n";
-  xml << "  <" << xmlEscaped(material.nodeCategory) << " name=\""
-      << xmlEscaped(shaderName) << "\" type=\"" << xmlEscaped(material.nodeType)
+  xml << "  <" << XmlEscaped(material.nodeCategory) << " name=\""
+      << XmlEscaped(shaderName) << "\" type=\"" << XmlEscaped(material.nodeType)
       << "\">\n";
 
   for (const auto& input : material.inputs) {
@@ -105,19 +105,19 @@ materialDocumentXml(const MaterialDescription& material)
       continue;
     }
 
-    xml << "    <input name=\"" << xmlEscaped(input.name) << "\" type=\""
-        << xmlEscaped(input.type) << "\" value=\"" << xmlEscaped(input.value)
+    xml << "    <input name=\"" << XmlEscaped(input.name) << "\" type=\""
+        << XmlEscaped(input.type) << "\" value=\"" << XmlEscaped(input.value)
         << "\" />\n";
   }
 
-  xml << "  </" << xmlEscaped(material.nodeCategory) << ">\n";
+  xml << "  </" << XmlEscaped(material.nodeCategory) << ">\n";
   xml << "</materialx>\n";
 
   return xml.str();
 }
 
 void
-replaceAll(std::string& value, std::string_view from, std::string_view to)
+ReplaceAll(std::string& value, std::string_view from, std::string_view to)
 {
   std::size_t offset = 0;
   while ((offset = value.find(from, offset)) != std::string::npos) {
@@ -127,21 +127,21 @@ replaceAll(std::string& value, std::string_view from, std::string_view to)
 }
 
 std::string
-raylibVertexSource(std::string source)
+RaylibVertexSource(std::string source)
 {
-  replaceAll(
+  ReplaceAll(
     source, "in vec3 i_position;", "layout(location = 0) in vec3 i_position;");
-  replaceAll(source,
+  ReplaceAll(source,
              "in vec2 i_texcoord_0;",
              "layout(location = 1) in vec2 i_texcoord_0;");
-  replaceAll(
+  ReplaceAll(
     source, "in vec3 i_normal;", "layout(location = 2) in vec3 i_normal;");
-  replaceAll(
+  ReplaceAll(
     source, "in vec3 i_tangent;", "layout(location = 4) in vec3 i_tangent;");
-  replaceAll(source,
+  ReplaceAll(source,
              "uniform mat4 u_viewProjectionMatrix = mat4(1.0);",
              "uniform mat4 u_worldViewProjectionMatrix = mat4(1.0);");
-  replaceAll(source,
+  ReplaceAll(source,
              "gl_Position = u_viewProjectionMatrix * hPositionWorld;",
              "gl_Position = u_worldViewProjectionMatrix * "
              "vec4(i_position, 1.0);");
@@ -149,7 +149,7 @@ raylibVertexSource(std::string source)
 }
 
 std::string
-raylibFragmentSource(std::string source)
+RaylibFragmentSource(std::string source)
 {
   return source;
 }
@@ -163,7 +163,7 @@ MaterialXShaderGenerator::MaterialXShaderGenerator(
 }
 
 ShaderGenerationResult
-MaterialXShaderGenerator::generate(const MaterialDescription& material) const
+MaterialXShaderGenerator::Generate(const MaterialDescription& material) const
 {
   ShaderGenerationResult result;
 
@@ -177,7 +177,7 @@ MaterialXShaderGenerator::generate(const MaterialDescription& material) const
 
     MaterialX::DocumentPtr document = MaterialX::createDocument();
     MaterialX::readFromXmlString(
-      document, materialDocumentXml(material), searchPath);
+      document, MaterialDocumentXml(material), searchPath);
     document->importLibrary(libraries);
 
     std::string validation;
@@ -212,9 +212,9 @@ MaterialXShaderGenerator::generate(const MaterialDescription& material) const
       generator->generate("material", renderables.front(), context);
 
     result.shader.vertexSource =
-      raylibVertexSource(shader->getSourceCode(MaterialX::Stage::VERTEX));
+      RaylibVertexSource(shader->getSourceCode(MaterialX::Stage::VERTEX));
     result.shader.fragmentSource =
-      raylibFragmentSource(shader->getSourceCode(MaterialX::Stage::PIXEL));
+      RaylibFragmentSource(shader->getSourceCode(MaterialX::Stage::PIXEL));
 
     if (result.shader.vertexSource.empty() ||
         result.shader.fragmentSource.empty()) {

@@ -8,7 +8,7 @@ namespace machina {
 class UsdLevelLoader
 {
 public:
-  [[nodiscard]] LevelDescription load(const std::filesystem::path& path) const;
+  [[nodiscard]] LevelDescription Load(const std::filesystem::path& path) const;
 };
 
 }
