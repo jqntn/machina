@@ -11,29 +11,13 @@ set(MACHINA_NVIDIA_USD_STAMP "${MACHINA_NVIDIA_USD_ROOT}/.machina_nvidia_usd_25.
 include("${CMAKE_CURRENT_LIST_DIR}/DownloadNvidiaUsd.cmake")
 
 set(MACHINA_NVIDIA_USD_LIBRARY_NAMES
-    usd_usdMtlx
-    usd_usdUI
-    usd_usdUtils
     usd_usdShade
     usd_usdGeom
     usd_usd
-    usd_kind
-    usd_pcp
-    usd_sdr
     usd_sdf
-    usd_ar
-    usd_plug
-    usd_ts
     usd_vt
-    usd_work
-    usd_trace
-    usd_js
-    usd_pegtl
-    usd_gf
     usd_tf
-    usd_arch
     usd_python
-    usd_boost
     MaterialXGenGlsl
     MaterialXGenShader
     MaterialXFormat
