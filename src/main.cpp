@@ -25,7 +25,7 @@ std::filesystem::path
 sampleScenePath()
 {
   return std::filesystem::current_path() / MACHINA_ASSETS_ROOT / "scenes" /
-         "suzannes" / "Untitled3.usda";
+         "suzannes.usda";
 }
 
 void
