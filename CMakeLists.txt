@@ -48,10 +48,6 @@ find_program(
     NAMES clang-format clang-format.exe
     HINTS "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/bin")
 
-if(NOT CLANG_FORMAT_EXE)
-    message(FATAL_ERROR "clang-format is required for the format target")
-endif()
-
 file(
     GLOB_RECURSE
     MACHINA_FORMAT_SOURCES
@@ -73,6 +69,7 @@ enable_testing()
 
 add_executable(machina_level_smoke tests/level_smoke.cpp)
 target_link_libraries(machina_level_smoke PRIVATE machina_engine)
+add_dependencies(machina_level_smoke machina)
 
 add_test(NAME level_smoke COMMAND machina_level_smoke)
 set_tests_properties(level_smoke PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:machina_level_smoke>")
@@ -87,14 +84,10 @@ function(machina_copy_assets target)
 endfunction()
 
 machina_copy_assets(machina)
-machina_copy_assets(machina_level_smoke)
 machina_copy_nvidia_usd_runtime(machina)
-machina_copy_nvidia_usd_runtime(machina_level_smoke)
 
 include(cmake/MakeDistribution.cmake)
 
 machina_add_distribution_target(
     TARGET machina
-    OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib"
-    NVIDIA_USD_ROOT "${MACHINA_NVIDIA_USD_ROOT}"
-    MATERIALX_LIBRARY_RUNTIME_ROOT "${MACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT}")
+    OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib")

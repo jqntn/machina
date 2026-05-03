@@ -21,23 +21,9 @@ function(machina_add_distribution_target)
   cmake_parse_arguments(
     MACHINA_DISTRIB
     ""
-    "TARGET;OUTPUT_DIR;NVIDIA_USD_ROOT;MATERIALX_LIBRARY_RUNTIME_ROOT"
+    "TARGET;OUTPUT_DIR"
     ""
     ${ARGN})
-
-  if(MACHINA_DISTRIB_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unexpected arguments: ${MACHINA_DISTRIB_UNPARSED_ARGUMENTS}")
-  endif()
-
-  foreach(required TARGET OUTPUT_DIR NVIDIA_USD_ROOT MATERIALX_LIBRARY_RUNTIME_ROOT)
-    if(NOT MACHINA_DISTRIB_${required})
-      message(FATAL_ERROR "machina_add_distribution_target requires ${required}")
-    endif()
-  endforeach()
-
-  if(NOT TARGET "${MACHINA_DISTRIB_TARGET}")
-    message(FATAL_ERROR "Distribution target '${MACHINA_DISTRIB_TARGET}' does not exist")
-  endif()
 
   machina_msvc_redist_dlls(msvc_redist_dlls)
 
@@ -51,16 +37,10 @@ function(machina_add_distribution_target)
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
             "$<TARGET_FILE_DIR:${MACHINA_DISTRIB_TARGET}>/assets"
             "${MACHINA_DISTRIB_OUTPUT_DIR}/assets"
-    COMMAND
-            "${CMAKE_COMMAND}"
-            "-DMACHINA_NVIDIA_USD_ROOT=${MACHINA_DISTRIB_NVIDIA_USD_ROOT}"
-            "-DMACHINA_NVIDIA_USD_RUNTIME_DIR=${MACHINA_DISTRIB_OUTPUT_DIR}"
-            "-DMACHINA_MATERIALX_LIBRARY_RUNTIME_ROOT=${MACHINA_DISTRIB_MATERIALX_LIBRARY_RUNTIME_ROOT}"
-            -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CopyNvidiaUsdRuntime.cmake"
-    DEPENDS "${MACHINA_DISTRIB_TARGET}"
     COMMENT "Assembling machina distribution")
 
   add_dependencies(distrib "${MACHINA_DISTRIB_TARGET}")
+  machina_add_nvidia_usd_runtime_copy(distrib "${MACHINA_DISTRIB_OUTPUT_DIR}")
 
   add_custom_command(
     TARGET distrib

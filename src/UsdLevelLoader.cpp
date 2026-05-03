@@ -209,8 +209,7 @@ std::optional<MaterialDescription>
 readMaterial(const UsdShadeMaterial& material,
              std::vector<Diagnostic>& diagnostics)
 {
-  UsdShadeShader shader =
-    material.ComputeSurfaceSource(TfTokenVector{ TfToken("mtlx") });
+  UsdShadeShader shader = material.ComputeSurfaceSource(TfToken("mtlx"));
 
   if (!shader) {
     diagnostics.push_back({ "Material " + pathOf(material) +
