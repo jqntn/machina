@@ -1,20 +1,26 @@
-#include <machina/materialx_shader_generator.hpp>
-
+#include <MaterialXCore/Definition.h>
 #include <MaterialXCore/Document.h>
+#include <MaterialXCore/Element.h>
+#include <MaterialXFormat/File.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenShader/GenContext.h>
 #include <MaterialXGenShader/HwShaderGenerator.h>
+#include <MaterialXGenShader/Library.h>
 #include <MaterialXGenShader/Shader.h>
+#include <MaterialXGenShader/ShaderStage.h>
 #include <MaterialXGenShader/Util.h>
-
-#include <algorithm>
 #include <cctype>
+#include <exception>
+#include <filesystem>
+#include <machina/level_description.hpp>
+#include <machina/materialx_shader_generator.hpp>
 #include <sstream>
-#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace machina {
 namespace {

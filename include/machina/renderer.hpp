@@ -1,13 +1,10 @@
 #pragma once
 
+#include <array>
+#include <entt/entity/fwd.hpp>
 #include <machina/level_description.hpp>
 #include <machina/materialx_shader_generator.hpp>
-
-#include <entt/entt.hpp>
 #include <raylib.h>
-
-#include <array>
-#include <string>
 #include <vector>
 
 namespace machina {

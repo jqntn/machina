@@ -1,40 +1,27 @@
 #include <machina/usd_level_loader.hpp>
 
-#include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec2d.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
-#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformCache.h>
-#include <pxr/usd/usdShade/input.h>
-#include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>
-#include <pxr/usd/usdShade/shader.h>
 
-#include <algorithm>
 #include <array>
-#include <cmath>
-#include <cstdint>
-#include <filesystem>
 #include <iomanip>
-#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
-#include <unordered_map>
-#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

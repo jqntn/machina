@@ -1,14 +1,13 @@
+#include <entt/entt.hpp>
+#include <filesystem>
+#include <machina/level_description.hpp>
 #include <machina/level_instantiator.hpp>
 #include <machina/materialx_shader_generator.hpp>
 #include <machina/renderer.hpp>
 #include <machina/usd_level_loader.hpp>
-
-#include <entt/entt.hpp>
+#include <print>
 #include <raylib.h>
 #include <raymath.h>
-
-#include <filesystem>
-#include <print>
 #include <string_view>
 #include <vector>
 
