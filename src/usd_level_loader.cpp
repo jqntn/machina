@@ -348,7 +348,27 @@ normalAt(const VtArray<GfVec3f>& normals,
   }
 
   const GfVec3f normal = normals[index];
-  return { normal[0], normal[1], normal[2] };
+  return normalized({ normal[0], normal[1], normal[2] });
+}
+
+void
+readMeshNormals(const UsdGeomMesh& mesh,
+                VtArray<GfVec3f>& normals,
+                TfToken& interpolation)
+{
+  normals.clear();
+  interpolation = UsdGeomTokens->constant;
+
+  const UsdGeomPrimvar primvar =
+    UsdGeomPrimvarsAPI(mesh.GetPrim()).GetPrimvar(TfToken("normals"));
+  if (primvar.HasValue() &&
+      primvar.ComputeFlattened(&normals, UsdTimeCode::Default())) {
+    interpolation = primvar.GetInterpolation();
+    return;
+  }
+
+  mesh.GetNormalsAttr().Get(&normals);
+  interpolation = mesh.GetNormalsInterpolation();
 }
 
 Vec2
@@ -367,6 +387,16 @@ texcoordAt(const VtArray<GfVec2f>& texcoords,
 
   const GfVec2f texcoord = texcoords[index];
   return { texcoord[0], texcoord[1] };
+}
+
+std::size_t
+usdLocalFaceVertexIndex(int faceVertexCount, int localIndex, bool isLeftHanded)
+{
+  if (!isLeftHanded) {
+    return static_cast<std::size_t>(localIndex);
+  }
+
+  return static_cast<std::size_t>(faceVertexCount - 1 - localIndex);
 }
 
 bool
@@ -400,9 +430,13 @@ readMesh(const UsdGeomMesh& mesh,
   }
 
   VtArray<GfVec3f> normals;
-  mesh.GetNormalsAttr().Get(&normals);
-  const TfToken normalInterpolation = mesh.GetNormalsInterpolation();
+  TfToken normalInterpolation;
+  readMeshNormals(mesh, normals, normalInterpolation);
   const bool useComputedFlatNormals = normals.empty();
+
+  TfToken orientation;
+  mesh.GetOrientationAttr().Get(&orientation);
+  const bool isLeftHanded = orientation == UsdGeomTokens->leftHanded;
 
   VtArray<GfVec2f> texcoords;
   TfToken texcoordInterpolation = UsdGeomTokens->constant;
@@ -434,13 +468,15 @@ readMesh(const UsdGeomMesh& mesh,
 
     for (int triangle = 1; triangle < faceVertexCount - 1; ++triangle) {
       const std::array<int, 3> localIndices = { 0, triangle, triangle + 1 };
+      std::array<std::size_t, 3> usdLocalIndices = {};
       std::array<int, 3> pointIndices = {};
 
       for (std::size_t trianglePoint = 0; trianglePoint < localIndices.size();
            ++trianglePoint) {
+        usdLocalIndices[trianglePoint] = usdLocalFaceVertexIndex(
+          faceVertexCount, localIndices[trianglePoint], isLeftHanded);
         const std::size_t faceVertexIndex =
-          faceVertexOffset +
-          static_cast<std::size_t>(localIndices[trianglePoint]);
+          faceVertexOffset + usdLocalIndices[trianglePoint];
         pointIndices[trianglePoint] = faceVertexIndices[faceVertexIndex];
 
         if (pointIndices[trianglePoint] < 0 ||
@@ -455,19 +491,11 @@ readMesh(const UsdGeomMesh& mesh,
       const Vec3 flatNormal = triangleNormal(points[pointIndices[0]],
                                              points[pointIndices[1]],
                                              points[pointIndices[2]]);
-      const Vec3 authoredFaceNormal =
-        !useComputedFlatNormals &&
-            normalInterpolation == UsdGeomTokens->faceVarying
-          ? normalAt(normals,
-                     normalInterpolation,
-                     static_cast<std::size_t>(pointIndices[0]),
-                     faceVertexOffset,
-                     faceIndex)
-          : Vec3{};
 
-      for (const int localIndex : localIndices) {
+      for (std::size_t trianglePoint = 0; trianglePoint < localIndices.size();
+           ++trianglePoint) {
         const std::size_t faceVertexIndex =
-          faceVertexOffset + static_cast<std::size_t>(localIndex);
+          faceVertexOffset + usdLocalIndices[trianglePoint];
         const int pointIndex = faceVertexIndices[faceVertexIndex];
 
         if (description.vertices.size() >
@@ -480,13 +508,11 @@ readMesh(const UsdGeomMesh& mesh,
         const GfVec3f position = points[pointIndex];
         Vec3 vertexNormal = flatNormal;
         if (!useComputedFlatNormals) {
-          vertexNormal = normalInterpolation == UsdGeomTokens->faceVarying
-                           ? authoredFaceNormal
-                           : normalAt(normals,
-                                      normalInterpolation,
-                                      static_cast<std::size_t>(pointIndex),
-                                      faceVertexIndex,
-                                      faceIndex);
+          vertexNormal = normalAt(normals,
+                                  normalInterpolation,
+                                  static_cast<std::size_t>(pointIndex),
+                                  faceVertexIndex,
+                                  faceIndex);
         }
 
         description.vertices.push_back(

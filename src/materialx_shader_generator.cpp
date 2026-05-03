@@ -121,16 +121,17 @@ replaceAll(std::string& value, std::string_view from, std::string_view to)
 }
 
 std::string
-flatVaryingSource(std::string source)
-{
-  replaceAll(source, "    vec3 normalWorld;", "    flat vec3 normalWorld;");
-  replaceAll(source, "    vec3 tangentWorld;", "    flat vec3 tangentWorld;");
-  return source;
-}
-
-std::string
 raylibVertexSource(std::string source)
 {
+  replaceAll(
+    source, "in vec3 i_position;", "layout(location = 0) in vec3 i_position;");
+  replaceAll(source,
+             "in vec2 i_texcoord_0;",
+             "layout(location = 1) in vec2 i_texcoord_0;");
+  replaceAll(
+    source, "in vec3 i_normal;", "layout(location = 2) in vec3 i_normal;");
+  replaceAll(
+    source, "in vec3 i_tangent;", "layout(location = 4) in vec3 i_tangent;");
   replaceAll(source,
              "uniform mat4 u_viewProjectionMatrix = mat4(1.0);",
              "uniform mat4 u_worldViewProjectionMatrix = mat4(1.0);");
@@ -138,13 +139,13 @@ raylibVertexSource(std::string source)
              "gl_Position = u_viewProjectionMatrix * hPositionWorld;",
              "gl_Position = u_worldViewProjectionMatrix * "
              "vec4(i_position, 1.0);");
-  return flatVaryingSource(std::move(source));
+  return source;
 }
 
 std::string
 raylibFragmentSource(std::string source)
 {
-  return flatVaryingSource(std::move(source));
+  return source;
 }
 
 }
