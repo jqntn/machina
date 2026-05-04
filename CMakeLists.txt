@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.20)
 
 project(machina LANGUAGES CXX)
 
+include(FetchContent)
+include(cmake/make_distribution.cmake)
+include(cmake/nvidia_usd.cmake)
+include(cmake/ultralight.cmake)
+
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
-include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
 FetchContent_Declare(
@@ -15,14 +19,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 find_package(EnTT CONFIG REQUIRED)
-include(cmake/NvidiaUsd.cmake)
+machina_add_ultralight_sdk()
 machina_add_nvidia_usd_sdk()
 
 set(MACHINA_ENGINE_SOURCES
     src/level_instantiator.cpp
     src/materialx_shader_generator.cpp
     src/renderer.cpp
-    src/usd_level_loader.cpp)
+    src/usd_level_loader.cpp
+    src/web_overlay.cpp)
 
 set(MACHINA_ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(MACHINA_ASSETS_RUNTIME_ROOT "assets")
@@ -38,7 +43,8 @@ target_link_libraries(
     machina_engine
     PUBLIC raylib
            EnTT::EnTT
-           machina_nvidia_usd)
+           machina_nvidia_usd
+           machina_ultralight)
 
 add_executable(machina src/main.cpp)
 target_link_libraries(machina PRIVATE machina_engine)
@@ -104,9 +110,9 @@ endfunction()
 
 machina_copy_assets(machina)
 machina_copy_nvidia_usd_runtime(machina)
-
-include(cmake/MakeDistribution.cmake)
+machina_copy_ultralight_runtime(machina)
 
 machina_add_distribution_target(
     TARGET machina
     OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib")
+machina_add_ultralight_runtime_copy(distrib "${CMAKE_CURRENT_SOURCE_DIR}/out/distrib")

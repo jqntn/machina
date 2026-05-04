@@ -4,6 +4,7 @@
 #include <entt/entity/fwd.hpp>
 #include <machina/level_description.hpp>
 #include <machina/materialx_shader_generator.hpp>
+#include <memory>
 #include <raylib.h>
 #include <vector>
 
@@ -40,22 +41,35 @@ struct UploadedMaterial
 class Renderer
 {
 public:
-  Renderer() = default;
-  Renderer(const Renderer&) = delete;
-  Renderer& operator=(const Renderer&) = delete;
-  Renderer(Renderer&&) = delete;
-  Renderer& operator=(Renderer&&) = delete;
-  ~Renderer();
-
   [[nodiscard]] std::vector<Diagnostic> Load(
     const LevelDescription& level,
     const MaterialXShaderGenerator& generator);
   void Draw(entt::registry& registry, const Camera& camera) const;
 
 private:
-  std::vector<Shader> shaders;
-  std::vector<Mesh> meshes;
-  std::vector<UploadedMaterial> materials;
+  struct ShaderDeleter
+  {
+    void operator()(Shader* shader) const noexcept;
+  };
+
+  struct MeshDeleter
+  {
+    void operator()(Mesh* mesh) const noexcept;
+  };
+
+  struct UploadedMaterialDeleter
+  {
+    void operator()(UploadedMaterial* material) const noexcept;
+  };
+
+  using ShaderHandle = std::unique_ptr<Shader, ShaderDeleter>;
+  using MeshHandle = std::unique_ptr<Mesh, MeshDeleter>;
+  using MaterialHandle =
+    std::unique_ptr<UploadedMaterial, UploadedMaterialDeleter>;
+
+  std::vector<ShaderHandle> shaders;
+  std::vector<MeshHandle> meshes;
+  std::vector<MaterialHandle> materials;
 };
 
 }

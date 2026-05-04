@@ -84,11 +84,11 @@ ShaderCacheKey(const MaterialDescription& material)
   std::ranges::sort(inputs);
 
   std::string key = material.nodeCategory + '\n' + material.nodeType;
-  for (const auto& [name, type] : inputs) {
+  for (const std::pair<std::string, std::string>& input : inputs) {
     key += '\n';
-    key += name;
+    key += input.first;
     key += ':';
-    key += type;
+    key += input.second;
   }
 
   return key;
@@ -314,10 +314,10 @@ SetVec3Uniform(const Shader& shader, int location, Vector3 value)
 }
 
 void
-SetMaterialParameterUniforms(const UploadedMaterial& material)
+SetMaterialParameterUniforms(const UploadedMaterial* material)
 {
-  const Shader& shader = material.material.shader;
-  for (const UploadedMaterialUniform& uniform : material.parameterUniforms) {
+  const Shader& shader = material->material.shader;
+  for (const UploadedMaterialUniform& uniform : material->parameterUniforms) {
     if (uniform.location < 0) {
       continue;
     }
@@ -376,50 +376,51 @@ SetMaterialSampler(Material& material, int mapSlot, int location)
 }
 
 void
-ConfigureMaterialEnvironmentMaps(UploadedMaterial& material)
+ConfigureMaterialEnvironmentMaps(UploadedMaterial* material)
 {
-  SetMaterialSampler(material.material,
+  SetMaterialSampler(material->material,
                      environmentRadianceMapSlot,
-                     material.envRadianceLocation);
-  SetMaterialSampler(material.material,
+                     material->envRadianceLocation);
+  SetMaterialSampler(material->material,
                      environmentIrradianceMapSlot,
-                     material.envIrradianceLocation);
+                     material->envIrradianceLocation);
 }
 
 void
-ConfigureStaticLightingUniforms(const UploadedMaterial& material)
+ConfigureStaticLightingUniforms(const UploadedMaterial* material)
 {
-  const Shader& shader = material.material.shader;
+  const Shader& shader = material->material.shader;
   const Vector3 direction =
     Vector3Normalize(Vector3{ -4.076245f, -5.903862f, 1.005454f });
   const Vector3 color = { 1.0f, 1.0f, 1.0f };
   const int envMips = 1;
   const int envSamples = 8;
 
-  SetFloatUniform(shader, material.envLightIntensityLocation, 0.4f);
-  SetIntUniform(shader, material.envRadianceMipsLocation, envMips);
-  SetIntUniform(shader, material.envRadianceSamplesLocation, envSamples);
-  SetIntUniform(shader, material.activeLightCountLocation, 1);
-  SetIntUniform(shader, material.lightTypeLocation, 1);
-  SetVec3Uniform(shader, material.lightDirectionLocation, direction);
-  SetVec3Uniform(shader, material.lightColorLocation, color);
-  SetFloatUniform(shader, material.lightIntensityLocation, 2.0f);
+  SetFloatUniform(shader, material->envLightIntensityLocation, 0.4f);
+  SetIntUniform(shader, material->envRadianceMipsLocation, envMips);
+  SetIntUniform(shader, material->envRadianceSamplesLocation, envSamples);
+  SetIntUniform(shader, material->activeLightCountLocation, 1);
+  SetIntUniform(shader, material->lightTypeLocation, 1);
+  SetVec3Uniform(shader, material->lightDirectionLocation, direction);
+  SetVec3Uniform(shader, material->lightColorLocation, color);
+  SetFloatUniform(shader, material->lightIntensityLocation, 2.0f);
 }
 
 void
-ConfigureFrameUniforms(const UploadedMaterial& material, const Camera& camera)
+ConfigureFrameUniforms(const UploadedMaterial* material, const Camera& camera)
 {
   SetVec3Uniform(
-    material.material.shader, material.viewPositionLocation, camera.position);
+    material->material.shader, material->viewPositionLocation, camera.position);
 }
 
 bool
-DrawCommandLess(const std::vector<UploadedMaterial>& materials,
+DrawCommandLess(const UploadedMaterial* leftMaterial,
+                const UploadedMaterial* rightMaterial,
                 const DrawCommand& left,
                 const DrawCommand& right)
 {
-  const unsigned int leftShader = materials[left.material].material.shader.id;
-  const unsigned int rightShader = materials[right.material].material.shader.id;
+  const unsigned int leftShader = leftMaterial->material.shader.id;
+  const unsigned int rightShader = rightMaterial->material.shader.id;
 
   if (leftShader != rightShader) {
     return leftShader < rightShader;
@@ -477,21 +478,37 @@ UploadMeshDescription(const MeshDescription& description)
 
 }
 
-Renderer::~Renderer()
+void
+Renderer::ShaderDeleter::operator()(Shader* shader) const noexcept
 {
-  for (UploadedMaterial& material : materials) {
-    material.material.shader.id = rlGetShaderIdDefault();
-    material.material.shader.locs = rlGetShaderLocsDefault();
-    UnloadMaterial(material.material);
+  if (shader != nullptr && shader->id != 0u) {
+    UnloadShader(*shader);
   }
 
-  for (Shader& shader : shaders) {
-    UnloadShader(shader);
+  delete shader;
+}
+
+void
+Renderer::MeshDeleter::operator()(Mesh* mesh) const noexcept
+{
+  if (mesh != nullptr) {
+    UnloadMesh(*mesh);
   }
 
-  for (Mesh& mesh : meshes) {
-    UnloadMesh(mesh);
+  delete mesh;
+}
+
+void
+Renderer::UploadedMaterialDeleter::operator()(
+  UploadedMaterial* material) const noexcept
+{
+  if (material != nullptr) {
+    material->material.shader.id = rlGetShaderIdDefault();
+    material->material.shader.locs = rlGetShaderLocsDefault();
+    UnloadMaterial(material->material);
   }
+
+  delete material;
 }
 
 std::vector<Diagnostic>
@@ -504,7 +521,8 @@ Renderer::Load(const LevelDescription& level,
   for (const MaterialDescription& materialDescription : level.materials) {
     const std::string cacheKey = ShaderCacheKey(materialDescription);
     std::size_t shaderIndex = 0;
-    const auto cachedShader = shaderCache.find(cacheKey);
+    const std::unordered_map<std::string, std::size_t>::const_iterator
+      cachedShader = shaderCache.find(cacheKey);
     if (cachedShader != shaderCache.end()) {
       shaderIndex = cachedShader->second;
     } else {
@@ -529,31 +547,34 @@ Renderer::Load(const LevelDescription& level,
 
       ConfigureShader(shader);
       shaderIndex = shaders.size();
-      shaders.push_back(shader);
+      shaders.push_back(ShaderHandle(new Shader(shader)));
       shaderCache.emplace(cacheKey, shaderIndex);
     }
 
     Material material = LoadMaterialDefault();
-    material.shader = shaders[shaderIndex];
+    const Shader* shader = shaders[shaderIndex].get();
+    material.shader = *shader;
     material.maps[MATERIAL_MAP_DIFFUSE].color =
       Color{ ColorByte(materialDescription.baseColor[0]),
              ColorByte(materialDescription.baseColor[1]),
              ColorByte(materialDescription.baseColor[2]),
              255 };
-    UploadedMaterial uploaded = MakeUploadedMaterial(material);
-    uploaded.parameterUniforms = MakeUploadedMaterialUniforms(
-      material.shader, materialDescription, diagnostics);
+    MaterialHandle uploaded(
+      new UploadedMaterial(MakeUploadedMaterial(material)));
+    uploaded->parameterUniforms = MakeUploadedMaterialUniforms(
+      uploaded->material.shader, materialDescription, diagnostics);
     if (!diagnostics.empty()) {
       return diagnostics;
     }
 
-    ConfigureMaterialEnvironmentMaps(uploaded);
-    ConfigureStaticLightingUniforms(uploaded);
-    materials.push_back(uploaded);
+    ConfigureMaterialEnvironmentMaps(uploaded.get());
+    ConfigureStaticLightingUniforms(uploaded.get());
+    materials.push_back(std::move(uploaded));
   }
 
   for (const MeshDescription& meshDescription : level.meshes) {
-    meshes.push_back(UploadMeshDescription(meshDescription));
+    Mesh mesh = UploadMeshDescription(meshDescription);
+    meshes.push_back(MeshHandle(new Mesh(mesh)));
   }
 
   return diagnostics;
@@ -564,39 +585,43 @@ Renderer::Draw(entt::registry& registry, const Camera& camera) const
 {
   std::vector<DrawCommand> drawCommands;
 
-  for (const UploadedMaterial& material : materials) {
-    ConfigureFrameUniforms(material, camera);
+  for (const MaterialHandle& material : materials) {
+    ConfigureFrameUniforms(material.get(), camera);
   }
 
-  const auto view = registry.view<const Renderable, const Transform>();
-  for (const entt::entity entity : view) {
-    const auto& renderable = view.get<const Renderable>(entity);
-    const auto& transform = view.get<const Transform>(entity);
+  registry.view<const Renderable, const Transform>().each(
+    [this, &drawCommands](const entt::entity entity,
+                          const Renderable& renderable,
+                          const Transform& transform) {
+      (void)entity;
+      if (renderable.mesh >= meshes.size() ||
+          renderable.material >= materials.size()) {
+        return;
+      }
 
-    if (renderable.mesh >= meshes.size() ||
-        renderable.material >= materials.size()) {
-      continue;
-    }
-
-    drawCommands.push_back({ renderable.mesh,
-                             renderable.material,
-                             RaylibMatrixFromTransform(transform.world) });
-  }
+      drawCommands.push_back({ renderable.mesh,
+                               renderable.material,
+                               RaylibMatrixFromTransform(transform.world) });
+    });
 
   std::ranges::sort(drawCommands,
                     [this](const DrawCommand& left, const DrawCommand& right) {
-                      return DrawCommandLess(materials, left, right);
+                      return DrawCommandLess(materials[left.material].get(),
+                                             materials[right.material].get(),
+                                             left,
+                                             right);
                     });
 
   std::size_t activeMaterial = materials.size();
   for (const DrawCommand& command : drawCommands) {
-    const UploadedMaterial& material = materials[command.material];
+    const UploadedMaterial* material = materials[command.material].get();
     if (command.material != activeMaterial) {
       SetMaterialParameterUniforms(material);
       activeMaterial = command.material;
     }
 
-    DrawMesh(meshes[command.mesh], material.material, command.modelMatrix);
+    const Mesh* mesh = meshes[command.mesh].get();
+    DrawMesh(*mesh, material->material, command.modelMatrix);
   }
 }
 

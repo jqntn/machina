@@ -100,7 +100,7 @@ MaterialDocumentXml(const MaterialDescription& material)
       << XmlEscaped(shaderName) << "\" type=\"" << XmlEscaped(material.nodeType)
       << "\">\n";
 
-  for (const auto& input : material.inputs) {
+  for (const MaterialInput& input : material.inputs) {
     if (input.value.empty()) {
       continue;
     }

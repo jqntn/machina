@@ -9,7 +9,7 @@ void
 LevelInstantiator::Instantiate(entt::registry& registry,
                                const LevelDescription& level) const
 {
-  for (const auto& description : level.entities) {
+  for (const EntityDescription& description : level.entities) {
     const entt::entity entity = registry.create();
     registry.emplace<Name>(entity, description.name);
     registry.emplace<Transform>(entity, description.transform);

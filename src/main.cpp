@@ -5,6 +5,8 @@
 #include <machina/materialx_shader_generator.hpp>
 #include <machina/renderer.hpp>
 #include <machina/usd_level_loader.hpp>
+#include <machina/web_overlay.hpp>
+#include <memory>
 #include <print>
 #include <raylib.h>
 #include <raymath.h>
@@ -65,6 +67,12 @@ main()
   SetWindowPosition(0, 0);
   SetExitKey(KEY_NULL);
 
+  const int webOverlayWidth = GetScreenWidth();
+  const int webOverlayHeight = GetScreenHeight();
+  std::unique_ptr<machina::WebOverlay> webOverlay =
+    std::make_unique<machina::WebOverlay>(
+      0, 0, webOverlayWidth, webOverlayHeight);
+
   machina::MaterialXShaderGenerator shaderGenerator(
     std::filesystem::current_path() / MACHINA_MATERIALX_LIBRARY_ROOT);
   machina::Renderer renderer;
@@ -90,6 +98,7 @@ main()
 
   while (!WindowShouldClose()) {
     showFps = showFps != IsKeyPressed(KEY_F1);
+    webOverlay->Update(true);
     UpdateCamera(&camera, CAMERA_ORBITAL);
 
     BeginDrawing();
@@ -104,9 +113,12 @@ main()
       DrawFps();
     }
 
+    webOverlay->Draw();
+
     EndDrawing();
   }
 
+  webOverlay.reset();
   CloseWindow();
   return 0;
 }

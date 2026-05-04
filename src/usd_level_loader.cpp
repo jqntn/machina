@@ -22,6 +22,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -562,7 +563,8 @@ UsdLevelLoader::Load(const std::filesystem::path& path) const
     }
 
     const std::string materialPath = PathOf(material);
-    auto materialIt = materialIndices.find(materialPath);
+    std::unordered_map<std::string, std::size_t>::iterator materialIt =
+      materialIndices.find(materialPath);
     if (materialIt == materialIndices.end()) {
       std::optional<MaterialDescription> materialDescription =
         ReadMaterial(material, level.diagnostics);

@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/download_nvidia_usd.cmake")
+
 set(
     MACHINA_NVIDIA_USD_URL
     "https://developer.nvidia.com/downloads/usd/usd_binaries/25.08/usd.py312.windows-x86_64.usdview.release-v25.08.71e038c1.zip")
@@ -7,8 +9,6 @@ set(MACHINA_NVIDIA_USD_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/out/vendor")
 set(MACHINA_NVIDIA_USD_ROOT "${MACHINA_NVIDIA_USD_VENDOR_DIR}/nvidia-usd-25.08")
 set(MACHINA_NVIDIA_USD_ARCHIVE "${MACHINA_NVIDIA_USD_VENDOR_DIR}/${MACHINA_NVIDIA_USD_ARCHIVE_NAME}")
 set(MACHINA_NVIDIA_USD_STAMP "${MACHINA_NVIDIA_USD_ROOT}/.machina_nvidia_usd_25.08.stamp")
-
-include("${CMAKE_CURRENT_LIST_DIR}/DownloadNvidiaUsd.cmake")
 
 set(MACHINA_NVIDIA_USD_LIBRARY_NAMES
     usd_usdShade
